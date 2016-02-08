@@ -5,3 +5,6 @@ pytest-pep8
 coverage
 coveralls
 PyYAML
+mock
+pylama
+pylama_pylint

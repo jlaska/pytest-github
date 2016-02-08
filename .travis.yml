@@ -1,0 +1,14 @@
+sudo: false
+language: python
+env:
+    - TOXENV=py26
+    - TOXENV=py27
+    - TOXENV=py33
+    - TOXENV=py34
+    - TOXENV=py35
+install:
+  - pip install -r requirements.txt --use-mirrors
+script:
+  - tox
+after_success:
+  coveralls

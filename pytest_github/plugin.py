@@ -2,17 +2,17 @@ import os
 import logging
 import yaml
 import pytest
-import py
+import py  # NOQA
+import re
 import github3
 import warnings
-import requests.exceptions
-from _pytest.python import getlocation
 from _pytest.resultlog import generic_path
 
 try:
     from logging import NullHandler
 except ImportError:
     from logging import Handler
+
     class NullHandler(Handler):
         def emit(self, record):
             pass
@@ -25,7 +25,7 @@ pytest-github
 ~~~~~~~~~~~~
 
 pytest-github is a plugin for py.test that allows tests to reference github
-cards for skip/xfail handling.
+issues for skip/xfail handling.
 
 :copyright: see LICENSE for details
 :license: MIT, see LICENSE for more details.
@@ -60,8 +60,8 @@ def pytest_addoption(parser):
                     dest='github_api_token',
                     metavar='GITHUB_API_TOKEN',
                     default=None,
-                    help='GitHub Personal Access token (defaults to value ' \
-                    'supplied in GITHUB_CFG). Refer to ' \
+                    help='GitHub Personal Access token (defaults to value ' +
+                    'supplied in GITHUB_CFG). Refer to ' +
                     'https://github.com/blog/1509-personal-api-tokens')
     group.addoption('--github-completed',
                     action='append',
@@ -95,7 +95,7 @@ def pytest_configure(config):
     github_completed = config.getoption('github_completed')
 
     # If not --help or --collectonly or --showfixtures ...
-    if not (config.option.help or config.option.collectonly or config.option.showfixtures):
+    if not (config.option.help or config.option.showfixtures):
         # Warn if file does not exist
         if not os.path.isfile(github_cfg_file):
             errstr = "No github configuration file found matching: %s" % github_cfg_file
@@ -145,99 +145,30 @@ def pytest_cmdline_main(config):
 
 def __show_github_summary(config, session):
     '''Generate a report that includes all linked GitHub issues, and their status.'''
+    # collect tests
     session.perform_collect()
-    curdir = py.path.local()
 
-    github_helper = config.pluginmanager.getplugin("github_helper")
+    # For each item, collect github markers and a generic_path for the item
+    issue_map = dict()
+    for item in filter(lambda i: i.get_marker("github") is not None, session.items):
+        marker = item.get_marker('github')
+        issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
+        for issue_url in issue_urls:
+            if issue_url not in issue_map:
+                issue_map[issue_url] = list()
+            issue_map[issue_url].append(generic_path(item))
 
-    card_cache = dict()
-    for i, item in enumerate(filter(lambda i: i.get_marker("github") is not None, session.items)):
-        cards = item.funcargs.get('cards', [])
-        for card in cards:
-            if card not in card_cache:
-                card_cache[card] = list()
-            card_cache[card].append(generic_path(item))
-
+    # Print a summary report
     reporter = config.pluginmanager.getplugin("terminalreporter")
-    reporter.section("github card report")
-    if card_cache:
-        for card, gpaths in card_cache.items():
-            reporter.write("{0} ".format(card.url), bold=True)
-            reporter.write_line("[{0}] {1}".format(card.list.name, card.name))
+    reporter.section("github issue report")
+    if issue_map:
+        for issue_url, gpaths in issue_map.items():
+            # FIXME - display the status
+            reporter.write_line("{0}".format(issue_url), bold=True)
             for gpath in gpaths:
-                reporter.write_line(" * %s" % gpath)
+                reporter.write_line(" - %s" % gpath)
     else:
         reporter.write_line("No github issues collected")
-
-
-class GitHub_Issue(object):
-    '''Object representing a github issue.
-    '''
-
-    def __init__(self, api, url):
-        self.api = api
-        self.url = url
-        self._card = None
-
-    @property
-    def id(self):
-        return os.path.basename(self.url)
-
-    @property
-    def card(self):
-        if self._card is None:
-            try:
-                self._card = self.api.cards.get(self.id)
-            except ValueError, e:
-                log.warning("Failed to retrieve card:%s - %s" % (self.id, e))
-                pass
-        return self._card
-
-    @property
-    def name(self):
-        return self.card['name']
-
-    @property
-    def idList(self):
-        return self.card['idList']
-
-    @property
-    def list(self):
-        return TrelloList(self.api, self.idList)
-
-
-class TrelloList(object):
-    '''Object representing a trello list.
-    '''
-
-    def __init__(self, api, id):
-        self.api = api
-        self.id = id
-        self._list = None
-
-    @property
-    def name(self):
-        if self._list is None:
-            try:
-                self._list = self.api.lists.get(self.id)
-            except ValueError, e:
-                log.warning("Failed to retrieve list:%s - %s" % (self.id, e))
-                pass
-        return self._list['name']
-
-
-class TrelloCardList(object):
-    '''Object representing a list of trello cards.'''
-    def __init__(self, api, *cards, **kwargs):
-        self.api = api
-        self.cards = cards
-        self.xfail = kwargs.get('xfail', True) and not ('skip' in kwargs)
-
-    def __iter__(self):
-        for card in self.cards:
-            if card not in _card_cache:
-                _card_cache[card] = GitHub_Issue(self.api, card)
-            yield _card_cache[card]
 
 
 class GitHubPytestPlugin(object):
@@ -246,41 +177,68 @@ class GitHubPytestPlugin(object):
         self.api = api
         self.completed_labels = kwargs.get('completed_labels', [])
 
+    def __parse_issue_url(self, url):
+        # Parse the github URL
+        match = re.match(r'https?://github.com/([^/]+)/([^/]+)/(?:issues|pull)/([0-9]+)$', url)
+        if match is None:
+            raise Exception("Unhandled github issue URL: %s" % url)
+        return match.groups()
+
+    def __cache_github_issues(self, items):
+        '''
+        Collect github markers and populate the issue_cache.
+        '''
+
+        for item in filter(lambda i: i.get_marker("github") is not None, items):
+            marker = item.get_marker('github')
+            issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
+            for issue_url in issue_urls:
+                if issue_url not in _issue_cache:
+                    # parse the URL
+                    (username, repository, number) = self.__parse_issue_url(issue_url)
+
+                    try:
+                        # _issue_cache[issue_url] = GitHub_Issue(self.api, issue_url)
+                        _issue_cache[issue_url] = self.api.issue(username, repository, number)
+                    except AttributeError:
+                        errstr = "Unable to inspect github issue %s" % issue_url
+                        warnings.warn(errstr, Warning)
+            item.funcargs["github_issues"] = issue_urls
+
     def pytest_runtest_setup(self, item):
         log.debug("pytest_runtest_setup() called")
         if 'github' not in item.keywords:
             return
 
         incomplete_issues = []
-        issues = item.funcargs["issues"]
-        for issue in issues:
-            try:
-                if issue.list.name not in self.completed_labels:
-                    incomplete_issues.append(issue)
-            except requests.exceptions.HTTPError, e:
-                log.warning("Error accessing issue:%s - %s" % (issue.id, e))
+        issue_urls = item.funcargs["github_issues"]
+        for issue_url in issue_urls:
+            if issue_url not in _issue_cache:
                 continue
+                # warnings.warn(errstr, Warning)
+
+            issue = _issue_cache[issue_url]
+            # if issue.is_closed or issue.has_label(self.completed_labels):
+            if issue.is_closed() or any(map(lambda l: l.name in self.completed_labels, issue.labels())):
+                incomplete_issues.append(issue)
 
         # item.get_marker('github').kwargs
         if incomplete_issues:
-            if issues.xfail:
+            # Add support for skip vs xfail
+            if True:
                 item.add_marker(pytest.mark.xfail(
                     reason="Xfailing due to incomplete github issues: \n{0}".format(
-                        "\n ".join(["{0} [{1}] {2}".format(issue.url, issue.list.name, issue.name) for issue in incomplete_issues]))))
+                        "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in incomplete_issues]))))
             else:
                 pytest.skip("Skipping due to incomplete github issues:\n{0}".format(
-                    "\n ".join(["{0} [{1}] {2}".format(issue.url, issue.list.name, issue.name) for issue in incomplete_issues])))
+                    "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in incomplete_issues])))
 
     def pytest_collection_modifyitems(self, session, config, items):
         log.debug("pytest_collection_modifyitems() called")
         reporter = config.pluginmanager.getplugin("terminalreporter")
         reporter.write("collected", bold=True)
-        for i, item in enumerate(filter(lambda i: i.get_marker("github") is not None, items)):
-            marker = item.get_marker('github')
-            issues = tuple(sorted(set(marker.args)))  # (O_O) for caching
-            for issue in issues:
-                if issue not in _issue_cache:
-                    _issue_cache[issue] = GitHub_Issue(self.api, issue)
-            # FIXME - item.funcargs["cards"] = TrelloCardList(self.api, *cards, **marker.kwargs)
-            item.funcargs["issues"] = ['FIXME',]
-        reporter.write(" {0} github markers\n".format(len(_issue_cache)), bold=True)
+
+        # cache the issues
+        self.__cache_github_issues(items)
+
+        reporter.write_line(" {0} github issues".format(len(_issue_cache)), bold=True)

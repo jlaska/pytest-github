@@ -12,6 +12,7 @@ class PyTestOption(object):
     @property
     def args(self):
         args = list()
+        args.append('-v')
 #         if self.config.getoption('github_api_key') is not None:
 #             args.append('--github-api-key')
 #             args.append(self.config.getoption('github_api_key'))
@@ -29,58 +30,61 @@ def option(request):
     return PyTestOption(request.config)
 
 
-def mock_github_card_get(self, card_id, **kwargs):
-    '''Returns JSON representation of an github card.'''
-    if card_id.startswith("closed"):
-        is_closed = True
-    else:
-        is_closed = False
-
-    return {
-        "labels": [],
-        "pos": 33054719,
-        "manualCoverAttachment": False,
-        "badges": {},
-        "id": "550c37c5226dd7241a61372f",
-        "idBoard": "54aeece5d8b09a1947f34050",
-        "idShort": 334,
-        "shortUrl": "https://github.com/c/%s" % card_id,
-        "closed": False,
-        "email": "nospam@boards.github.com",
-        "dateLastActivity": "2015-03-20T15:12:29.735Z",
-        "idList": "%s53f20bbd90cfc68effae9544" % (is_closed and 'closed' or 'open'),
-        "idLabels": [],
-        "idMembers": [],
-        "checkItemStates": [],
-        "name": "mock github card - %s" % (is_closed and 'closed' or 'open'),
-        "desc": "mock github card - %s" % (is_closed and 'closed' or 'open'),
-        "descData": {},
-        "url": "https://github.com/c/%s" % card_id,
-        "idAttachmentCover": None,
-        "idChecklists": []
-    }
-
-
-def mock_github_list_get(self, list_id, **kwargs):
-    '''Returns JSON representation of a github list containing open cards.'''
-    if list_id.startswith("closed"):
-        is_closed = True
-    else:
-        is_closed = False
-
-    return {
-        "pos": 124927.75,
-        "idBoard": "54aeece5d8b09a1947f34050",
-        "id": list_id,
-        "closed": False,
-        "name": is_closed and "Done" or "Not Done"
-    }
+@pytest.fixture()
+def open_issues(request):
+    return [
+        'https://github.com/jlaska/open/issues/1',
+        'https://github.com/jlaska/open/issues/2',
+        'https://github.com/jlaska/open/issues/3',
+    ]
 
 
 @pytest.fixture()
-def monkeypatch_github(request, monkeypatch):
-    monkeypatch.delattr("requests.get")
+def closed_issues(request):
+    return [
+        'https://github.com/jlaska/closed/issues/4',
+        'https://github.com/jlaska/closed/issues/5',
+        'https://github.com/jlaska/closed/issues/6',
+    ]
+
+
+def mock_github_issue_is_closed(self):
+    '''Returns JSON representation of an github card.'''
+    return True
+
+
+@pytest.fixture(autouse=True)
+def no_requests(request, monkeypatch):
     monkeypatch.delattr("requests.sessions.Session.request")
-    # FIXME
-    # monkeypatch.setattr('github.cards.Cards.get', mock_github_card_get)
-    # monkeypatch.setattr('github.lists.Lists.get', mock_github_list_get)
+
+
+@pytest.fixture(autouse=True)
+def monkeypatch_github3(request, monkeypatch):
+    monkeypatch.setattr('github3.login', lambda x, y: FakeGitHub(x, y))
+
+
+class FakeGitHub(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def issue(self, username, repository, number):
+        return FakeIssue(username, repository, number)
+
+
+class FakeIssue(object):
+    def __init__(self, *args, **kwargs):
+        self.url = "https://github.com/{0}/{1}/issues/{2}".format(*args)
+        self.title = 'Mock issue title'
+
+    def is_closed(self):
+        return 'closed' in self.url.lower() and True or False
+
+    @property
+    def state(self):
+        if self.is_closed():
+            return 'closed'
+        else:
+            return 'open'
+
+    def labels(self):
+        return []
