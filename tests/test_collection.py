@@ -11,8 +11,8 @@ def test_collection_reporter_no_issues(testdir, option, capsys):
     """
     result = testdir.inline_runsource(src, *option.args + ['--collectonly'])
     assert result.ret == EXIT_OK
+
     stdout, stderr = capsys.readouterr()
-    print stdout
     assert "collected 0 github issues" in stdout
 
 
