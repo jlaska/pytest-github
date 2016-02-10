@@ -104,14 +104,15 @@ def pytest_configure(config):
 
         # Load configuration file ...
         if os.path.isfile(github_cfg_file):
-            github_cfg = yaml.load(open(github_cfg_file, 'r'))
-            try:
-                github_cfg = github_cfg.get('github', {})
-            except AttributeError:
-                github_cfg = {}
-                errstr = "No github configuration found in file: %s" % github_cfg_file
-                log.warning(errstr)
-                warnings.warn(errstr, Warning)
+            with open(github_cfg_file, 'r') as fd:
+                github_cfg = yaml.load(fd)
+                try:
+                    github_cfg = github_cfg.get('github', {})
+                except AttributeError:
+                    github_cfg = {}
+                    errstr = "No github configuration found in file: %s" % github_cfg_file
+                    log.warning(errstr)
+                    warnings.warn(errstr, Warning)
 
             if github_username is None:
                 github_username = github_cfg.get('key', None)
