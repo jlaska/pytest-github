@@ -1,4 +1,7 @@
+import pytest
 from _pytest.main import EXIT_OK
+
+pytestmark = pytest.mark.usefixtures("monkeypatch_github3")
 
 
 def test_collection_reporter_no_issues(testdir, option, capsys):

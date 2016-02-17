@@ -33,24 +33,19 @@ def option(request):
 @pytest.fixture()
 def open_issues(request):
     return [
-        'https://github.com/jlaska/open/issues/1',
-        'https://github.com/jlaska/open/issues/2',
-        'https://github.com/jlaska/open/issues/3',
+        'https://github.com/pytest-github/open/issues/1',
+        'https://github.com/pytest-github/open/issues/2',
+        'https://github.com/pytest-github/open/issues/3',
     ]
 
 
 @pytest.fixture()
 def closed_issues(request):
     return [
-        'https://github.com/jlaska/closed/issues/4',
-        'https://github.com/jlaska/closed/issues/5',
-        'https://github.com/jlaska/closed/issues/6',
+        'https://github.com/pytest-github/closed/issues/4',
+        'https://github.com/pytest-github/closed/issues/5',
+        'https://github.com/pytest-github/closed/issues/6',
     ]
-
-
-def mock_github_issue_is_closed(self):
-    '''Returns JSON representation of an github card.'''
-    return True
 
 
 @pytest.fixture(autouse=True)
@@ -58,14 +53,15 @@ def no_requests(request, monkeypatch):
     monkeypatch.delattr("requests.sessions.Session.request")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def monkeypatch_github3(request, monkeypatch):
     monkeypatch.setattr('github3.login', lambda x, y: FakeGitHub(x, y))
 
 
 class FakeGitHub(object):
     def __init__(self, *args, **kwargs):
-        pass
+        self.username = args[0]
+        self.password = args[1]
 
     def issue(self, username, repository, number):
         return FakeIssue(username, repository, number)
@@ -87,4 +83,9 @@ class FakeIssue(object):
             return 'open'
 
     def labels(self):
-        return []
+        return [FakeLabel()]
+
+
+class FakeLabel(object):
+    def __init__(self, *args, **kwargs):
+        self.name = 'state:Ready For Test'

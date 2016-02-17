@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
+import mock
 from _pytest.main import EXIT_OK, EXIT_NOTESTSCOLLECTED, EXIT_INTERRUPTED
 from . import assert_outcome
 
@@ -99,11 +100,11 @@ def test_param_github_cfg(testdir, option, open_issues):
         username: ''
         token: ''
         completed:
-            - 'not_done'
+            - 'state:Ready For Test'
     '''
     cfg_file = testdir.makefile('.yml', contents)
 
-    # the following would normally xpass, but when completed=['not_done'], it
+    # the following would normally xpass, but when completed=['ready_for_test'], it
     # will just pass
     src = """
         import pytest
@@ -111,9 +112,16 @@ def test_param_github_cfg(testdir, option, open_issues):
         def test_func():
             assert True
         """ % open_issues[0]
-    result = testdir.inline_runsource(src, *['--github-cfg', str(cfg_file)])
+
+    mo = mock.mock_open()
+    with mock.patch('pytest_github.plugin.open', mo, create=True):
+        result = testdir.inline_runsource(src, *['--github-cfg', str(cfg_file)])
+
+    # Assert py.test exit code
     assert result.ret == EXIT_OK
-    assert_outcome(result, passed=1)
+
+    # Assert mock open called on provided file
+    mo.assert_called_once_with(str(cfg_file), 'r')
 
 
 def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, open_issues):
