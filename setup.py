@@ -5,12 +5,7 @@ import shutil
 import codecs
 from setuptools import setup, Command
 from setuptools.command.test import test as TestCommand
-from pytest_github import __version__, __author__, __author_email__
-
-if sys.version_info < (3, 0):
-    from ConfigParser import ConfigParser
-else:
-    from configparser import ConfigParser
+from pytest_github import __doc__, __version__, __author__, __author_email__
 
 
 class ToxTestCommand(TestCommand):
@@ -91,14 +86,14 @@ long_description = (
 setup(
     name="pytest-github",
     version=__version__,
-    description='Plugin for py.test that associates tests with github issues using a marker',
+    description=__doc__,
     long_description=long_description,
     author=__author__,
     author_email=__author_email__,
     url='http://github.com/jlaska/pytest-github',
     license='MIT',
     keywords='py.test pytest testing github issues',
-    #platforms='any',
+    platforms='any',
     packages=['pytest_github'],
     include_package_data=True,
     entry_points={

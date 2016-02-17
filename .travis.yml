@@ -6,6 +6,7 @@ env:
     - TOXENV=py33
     - TOXENV=py34
     - TOXENV=py35
+    - TOXENV=lint
 install:
     - pip install -r requirements.txt --use-mirrors
 script:

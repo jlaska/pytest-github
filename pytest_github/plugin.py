@@ -1,3 +1,10 @@
+"""
+pytest-github is a plugin for py.test that allows tests to reference github issues for skip/xfail handling.
+
+:copyright: see LICENSE for details
+:license: MIT, see LICENSE for more details.
+"""
+
 import os
 import logging
 import yaml
@@ -8,28 +15,22 @@ import github3
 import warnings
 from _pytest.resultlog import generic_path
 
+# Import, or define, NullHandler
 try:
     from logging import NullHandler
 except ImportError:
     from logging import Handler
 
     class NullHandler(Handler):
+
+        """NullHandler implementation for python 2.6."""
+
         def emit(self, record):
+            """Fake emit method."""
             pass
 
 log = logging.getLogger(__name__)
 log.addHandler(NullHandler())
-
-"""
-pytest-github
-~~~~~~~~~~~~
-
-pytest-github is a plugin for py.test that allows tests to reference github
-issues for skip/xfail handling.
-
-:copyright: see LICENSE for details
-:license: MIT, see LICENSE for more details.
-"""
 
 # Cache the github issues to reduce duplicate lookups
 _issue_cache = {}
@@ -40,8 +41,7 @@ GITHUB_COMPLETED_LABELS = []
 
 
 def pytest_addoption(parser):
-    '''Add options to control github integration.'''
-
+    """Add options to control github integration."""
     group = parser.getgroup('pytest-github')
     group.addoption('--github-cfg',
                     action='store',
@@ -68,7 +68,8 @@ def pytest_addoption(parser):
                     dest='github_completed',
                     metavar='GITHUB_COMPLETED',
                     default=[],
-                    help='Any issues in GITHUB_COMPLETED will be treated as done (default: %s)' % GITHUB_COMPLETED_LABELS)
+                    help='Any issues in GITHUB_COMPLETED will be treated as '
+                    'done (default: %s)' % GITHUB_COMPLETED_LABELS)
     group.addoption('--github-summary',
                     action='store_true',
                     dest='show_github_summary',
@@ -80,9 +81,7 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    '''
-    Validate --github-* parameters.
-    '''
+    """Validate --github-* parameters."""
     log.debug("pytest_configure() called")
 
     # Add marker
@@ -136,7 +135,7 @@ def pytest_configure(config):
 
 
 def pytest_cmdline_main(config):
-    '''Check show_fixture_duplicates option to show fixture duplicates.'''
+    """Check show_fixture_duplicates option to show fixture duplicates."""
     log.debug("pytest_cmdline_main() called")
     if config.option.show_github_summary:
         from _pytest.main import wrap_session
@@ -145,7 +144,7 @@ def pytest_cmdline_main(config):
 
 
 def __show_github_summary(config, session):
-    '''Generate a report that includes all linked GitHub issues, and their status.'''
+    """Generate a report that includes all linked GitHub issues, and their status."""
     # collect tests
     session.perform_collect()
 
@@ -173,7 +172,11 @@ def __show_github_summary(config, session):
 
 
 class GitHubPytestPlugin(object):
+
+    """GitHub Plugin class."""
+
     def __init__(self, api, **kwargs):
+        """Initialize attributes."""
         log.debug("GitHubPytestPlugin initialized")
         self.api = api
         self.completed_labels = kwargs.get('completed_labels', [])
@@ -186,10 +189,7 @@ class GitHubPytestPlugin(object):
         return match.groups()
 
     def __cache_github_issues(self, items):
-        '''
-        Collect github markers and populate the issue_cache.
-        '''
-
+        """Collect github markers and populate the issue_cache."""
         for item in filter(lambda i: i.get_marker("github") is not None, items):
             marker = item.get_marker('github')
             issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
@@ -206,6 +206,7 @@ class GitHubPytestPlugin(object):
             item.funcargs["github_issues"] = issue_urls
 
     def pytest_runtest_setup(self, item):
+        """Handle github marker by calling xfail or skip, as needed."""
         log.debug("pytest_runtest_setup() called")
         if 'github' not in item.keywords:
             return
@@ -229,7 +230,7 @@ class GitHubPytestPlugin(object):
         if unresolved_issues:
             # TODO - Add support for skip vs xfail
             skip = item.get_marker('github').kwargs.get('skip', False)
-            if False:
+            if False and skip:
                 pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
                     "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues])))
             else:
@@ -238,6 +239,7 @@ class GitHubPytestPlugin(object):
                         "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues]))))
 
     def pytest_collection_modifyitems(self, session, config, items):
+        """Report number of github issues collected."""
         log.debug("pytest_collection_modifyitems() called")
         reporter = config.pluginmanager.getplugin("terminalreporter")
         reporter.write("collected", bold=True)
