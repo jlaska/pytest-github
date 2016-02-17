@@ -21,8 +21,8 @@ def assert_outcome(result, passed=0, failed=0, skipped=0, xpassed=0, xfailed=0):
         else:
             continue
 
-    assert passed == actual_count['passed']
-    assert failed == actual_count['failed']
-    assert skipped == actual_count['skipped']
-    assert xfailed == actual_count['xfailed']
-    assert xpassed == actual_count['xpassed']
+    assert passed == actual_count['passed'], "Unexpected value for 'passed', %s" % actual_count
+    assert failed == actual_count['failed'], "Unexpected value for 'failed', %s" % actual_count
+    assert skipped == actual_count['skipped'], "Unexpected value for 'skipped', %s" % actual_count
+    assert xfailed == actual_count['xfailed'], "Unexpected value for 'xfailed', %s" % actual_count
+    assert xpassed == actual_count['xpassed'], "Unexpected value for 'xpassed', %s" % actual_count
