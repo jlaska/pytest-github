@@ -199,7 +199,6 @@ class GitHubPytestPlugin(object):
                     (username, repository, number) = self.__parse_issue_url(issue_url)
 
                     try:
-                        # _issue_cache[issue_url] = GitHub_Issue(self.api, issue_url)
                         _issue_cache[issue_url] = self.api.issue(username, repository, number)
                     except AttributeError:
                         errstr = "Unable to inspect github issue %s" % issue_url
@@ -211,7 +210,7 @@ class GitHubPytestPlugin(object):
         if 'github' not in item.keywords:
             return
 
-        incomplete_issues = []
+        unresolved_issues = []
         issue_urls = item.funcargs["github_issues"]
         for issue_url in issue_urls:
             if issue_url not in _issue_cache:
@@ -219,20 +218,24 @@ class GitHubPytestPlugin(object):
                 # warnings.warn(errstr, Warning)
 
             issue = _issue_cache[issue_url]
-            # if issue.is_closed or issue.has_label(self.completed_labels):
-            if issue.is_closed() or any(map(lambda l: l.name in self.completed_labels, issue.labels())):
-                incomplete_issues.append(issue)
 
-        # item.get_marker('github').kwargs
-        if incomplete_issues:
-            # Add support for skip vs xfail
-            if True:
-                item.add_marker(pytest.mark.xfail(
-                    reason="Xfailing due to incomplete github issues: \n{0}".format(
-                        "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in incomplete_issues]))))
+            issue_labels = [l.name for l in issue.labels()]
+
+            # if the issue is open and isn't considered "completed" by any of the issue labels ...
+            if not issue.is_closed() and not set(self.completed_labels).intersection(issue_labels):
+                # consider it unresolved
+                unresolved_issues.append(issue)
+
+        if unresolved_issues:
+            # TODO - Add support for skip vs xfail
+            skip = item.get_marker('github').kwargs.get('skip', False)
+            if False:
+                pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
+                    "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues])))
             else:
-                pytest.skip("Skipping due to incomplete github issues:\n{0}".format(
-                    "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in incomplete_issues])))
+                item.add_marker(pytest.mark.xfail(
+                    reason="Xfailing due to unresolved github issues: \n{0}".format(
+                        "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues]))))
 
     def pytest_collection_modifyitems(self, session, config, items):
         log.debug("pytest_collection_modifyitems() called")
