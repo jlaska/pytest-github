@@ -87,7 +87,8 @@ setup(
     name="pytest-github",
     version=__version__,
     description=__doc__,
-    long_description=long_description,
+    # long_description=long_description,
+    long_description_markdown_filename='README.md',
     author=__author__,
     author_email=__author_email__,
     url='http://github.com/jlaska/pytest-github',
@@ -102,6 +103,9 @@ setup(
         ],
     },
     # zip_safe=False,
+    setup_requires=[
+        'setuptools-markdown'
+    ],
     tests_requires=[
         'tox',
     ],
