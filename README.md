@@ -9,4 +9,4 @@
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/pytest-github.svg)](https://pypi.python.org/pypi/pytest-github/)
 
 Plugin for py.test that integrates with github using markers.  Integration
-allows tests to xfail (or skip) based on the status of linked github cards.
+allows tests to xfail (or skip) based on the status of linked github issues.
