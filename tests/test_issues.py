@@ -94,20 +94,34 @@ def test_failure_with_closed_issue(testdir, option, closed_issues):
     assert_outcome(result, failed=1)
 
 
-def test_with_malformed_issue_link(testdir, option, capsys):
+@pytest.mark.parametrize(
+    "issue_url, expected_result",
+    [
+        (None, EXIT_OK),
+        ('', EXIT_OK),
+        ('""', EXIT_INTERNALERROR),
+        ('"asdfasdf"', EXIT_INTERNALERROR),
+        ('"https://github.com"', EXIT_INTERNALERROR),
+        ('"https://github.com/pytest-github/pytest-github"', EXIT_INTERNALERROR),
+    ]
+)
+def test_with_malformed_issue_link(testdir, option, capsys, issue_url, expected_result):
     '''FIXME'''
 
     src = """
         import pytest
-        @pytest.mark.github('https://github.com')
+        @pytest.mark.github(%s)
         def test_func():
-            assert False
-    """
+            assert True
+    """ % issue_url
     result = testdir.inline_runsource(src, *option.args)
-    assert result.ret == EXIT_INTERNALERROR
+    assert result.ret == expected_result
 
     stdout, stderr = capsys.readouterr()
-    assert "Malformed github issue URL: https://github.com" in str(stdout)
+    if expected_result == EXIT_OK:
+        assert "Malformed github issue URL:" not in stdout
+    else:
+        assert "Malformed github issue URL:" in stdout
 
 
 def test_with_private_issue_link(testdir, option, recwarn, capsys):

@@ -19,7 +19,27 @@ def test_collection_reporter_no_issues(testdir, option, capsys):
     assert "collected 0 github issues" in stdout
 
 
-def test_collection_reporter_multiple_issues(testdir, option, capsys, closed_issues, open_issues):
+def test_collection_reporter_multiple_issues_one_per_test(testdir, option, capsys, closed_issues, open_issues):
+    '''verifies the github collection when a single issue is used in the decorator'''
+
+    src = """
+        import pytest
+        @pytest.mark.github('%s')
+        def test_foo():
+            assert True
+
+        @pytest.mark.github('%s')
+        def test_bar():
+            assert True
+    """ % (closed_issues[0], open_issues[0])
+    result = testdir.inline_runsource(src, *option.args + ['--collectonly'])
+    assert result.ret == EXIT_OK
+
+    stdout, stderr = capsys.readouterr()
+    assert 'collected %s github issues' % 2 in stdout
+
+
+def test_collection_reporter_multiple_issues_per_test(testdir, option, capsys, closed_issues, open_issues):
     '''verifies the github collection'''
 
     src = """

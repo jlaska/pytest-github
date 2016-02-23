@@ -32,9 +32,6 @@ except ImportError:
 log = logging.getLogger(__name__)
 log.addHandler(NullHandler())
 
-# Cache the github issues to reduce duplicate lookups
-_issue_cache = {}
-
 # Maintain a list of github labels to consider issues "finished".  Any issues
 # associated with these labels will be considered "done".
 GITHUB_COMPLETED_LABELS = []
@@ -179,15 +176,16 @@ class GitHubPytestPlugin(object):
         """Initialize attributes."""
         log.debug("GitHubPytestPlugin initialized")
         self.api = api
+        self._issue_cache = {}
         self.completed_labels = kwargs.get('completed_labels', [])
 
     def __parse_issue_url(self, url):
         # Parse the github URL
         match = re.match(r'https?://github.com/([^/]+)/([^/]+)/(?:issues|pull)/([0-9]+)$', url)
-        if match:
+        try:
             return match.groups()
-        else:
-            errstr = "Malformed github issue URL: %s" % url
+        except AttributeError:
+            errstr = "Malformed github issue URL: '%s'" % url
             raise Exception(errstr)
             # warnings.warn(errstr, Warning)
             # return (None, None, None)
@@ -198,12 +196,16 @@ class GitHubPytestPlugin(object):
             marker = item.get_marker('github')
             issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
             for issue_url in issue_urls:
-                if issue_url not in _issue_cache:
+                # Handle missing/bogus args
+                if issue_url is None:
+                    continue
+                # Parse github issue
+                if issue_url not in self._issue_cache:
                     # parse the URL
                     (username, repository, number) = self.__parse_issue_url(issue_url)
 
                     try:
-                        _issue_cache[issue_url] = self.api.issue(username, repository, number)
+                        self._issue_cache[issue_url] = self.api.issue(username, repository, number)
                     except (AttributeError, github3.models.GitHubError) as e:
                         errstr = "Unable to inspect github issue %s - %s" % (issue_url, str(e))
                         warnings.warn(errstr, Warning)
@@ -218,11 +220,11 @@ class GitHubPytestPlugin(object):
         unresolved_issues = []
         issue_urls = item.funcargs["github_issues"]
         for issue_url in issue_urls:
-            if issue_url not in _issue_cache:
+            if issue_url not in self._issue_cache:
                 continue
                 # warnings.warn(errstr, Warning)
 
-            issue = _issue_cache[issue_url]
+            issue = self._issue_cache[issue_url]
 
             issue_labels = [l.name for l in issue.labels]
 
@@ -246,14 +248,10 @@ class GitHubPytestPlugin(object):
         """Report number of github issues collected."""
         log.debug("pytest_collection_modifyitems() called")
 
-        # Clear existing cache
-        # global _issue_cache
-        # _issue_cache = {}
-
         reporter = config.pluginmanager.getplugin("terminalreporter")
         reporter.write("collected", bold=True)
 
         # cache the issues
         self.__cache_github_issues(items)
 
-        reporter.write_line(" {0} github issues".format(len(_issue_cache)), bold=True)
+        reporter.write_line(" {0} github issues".format(len(self._issue_cache)), bold=True)
