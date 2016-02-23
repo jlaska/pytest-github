@@ -113,8 +113,6 @@ def test_with_malformed_issue_link(testdir, option, capsys):
 def test_with_private_issue_link(testdir, option, recwarn, capsys):
     '''FIXME'''
 
-    import pytest_github
-    pytest_github._issue_cache = {}
     issue_url = 'https://github.com/github/github/issues/1'
     src = """
         import pytest
@@ -122,15 +120,23 @@ def test_with_private_issue_link(testdir, option, recwarn, capsys):
         def test_func():
             assert False
     """ % issue_url
-    result = testdir.inline_runsource(src, *option.args)
-    assert result.ret == EXIT_TESTSFAILED
+    with pytest.warns(None) as record:
+        result = testdir.inline_runsource(src, *option.args)
+        assert result.ret == EXIT_TESTSFAILED
 
-    stdout, stderr = capsys.readouterr()
+    # check that warnings are present
+    assert len(record) > 0
 
-    # check that only one warning was raised
-    assert len(recwarn) == 1
-    # check that the category matches
-    record = recwarn.pop(Warning)
-    assert issubclass(record.category, Warning)
-    # check that the message matches
-    assert str(record.message) == "Unable to inspect github issue %s" % issue_url
+    # Assert the expected warning is present
+    found = False
+    expected_warning = "Unable to inspect github issue %s" % issue_url
+    for warning in record:
+        # check that the category matches
+        assert issubclass(warning.category, Warning)
+
+        # check that the message matches
+        if expected_warning in str(warning.message):
+            found = True
+
+    # Assert the warning was found
+    assert found, "Unable to find expected warning message - %s" % expected_warning
