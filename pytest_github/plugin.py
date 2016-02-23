@@ -204,8 +204,8 @@ class GitHubPytestPlugin(object):
 
                     try:
                         _issue_cache[issue_url] = self.api.issue(username, repository, number)
-                    except (AttributeError, github3.models.GitHubError) as e:
-                        errstr = "Unable to inspect github issue %s (%s)" % (issue_url, e.message)
+                    except (AttributeError, github3.models.GitHubError):
+                        errstr = "Unable to inspect github issue %s" % issue_url
                         warnings.warn(errstr, Warning)
             item.funcargs["github_issues"] = issue_urls
 
