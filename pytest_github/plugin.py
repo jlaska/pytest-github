@@ -55,10 +55,10 @@ def pytest_addoption(parser):
                     default=None,
                     metavar='GITHUB_USERNAME',
                     help='GitHub username (defaults to value supplied in GITHUB_CFG)')
-    group.addoption('--github-api-token',
+    group.addoption('--github-token',
                     action='store',
-                    dest='github_api_token',
-                    metavar='GITHUB_API_TOKEN',
+                    dest='github_token',
+                    metavar='GITHUB_TOKEN',
                     default=None,
                     help='GitHub Personal Access token (defaults to value ' +
                     'supplied in GITHUB_CFG). Refer to ' +
@@ -90,7 +90,7 @@ def pytest_configure(config):
     # Sanitize key and token
     github_cfg_file = config.getoption('github_cfg_file')
     github_username = config.getoption('github_username')
-    github_api_token = config.getoption('github_api_token')
+    github_token = config.getoption('github_token')
     github_completed = config.getoption('github_completed')
 
     # If not --help or --collectonly or --showfixtures ...
@@ -114,14 +114,14 @@ def pytest_configure(config):
                     warnings.warn(errstr, Warning)
 
             if github_username is None:
-                github_username = github_cfg.get('key', None)
-            if github_api_token is None:
-                github_api_token = github_cfg.get('token', None)
+                github_username = github_cfg.get('username', None)
+            if github_token is None:
+                github_token = github_cfg.get('token', None)
             if github_completed is None or github_completed == []:
                 github_completed = github_cfg.get('completed', [])
 
         # Initialize github api connection
-        api = github3.login(github_username, github_api_token)
+        api = github3.login(github_username, github_token)
 
         # If completed is still empty, load default ...
         if github_completed is None or github_completed == []:

@@ -15,7 +15,7 @@ def test_plugin_help(testdir):
         # Check for the specific args
         '* --github-cfg=GITHUB_CFG',
         '* --github-username=GITHUB_USERNAME',
-        '* --github-api-token=GITHUB_API_TOKEN',
+        '* --github-token=GITHUB_TOKEN',
         '* --github-completed=GITHUB_COMPLETED',
         '* --github-summary *',
         # Check for the marker in --help
@@ -37,13 +37,13 @@ def test_plugin_markers(testdir):
     [
         "--github-cfg",
         "--github-username",
-        "--github-api-token",
+        "--github-token",
         "--github-completed",
     ],
     ids=[
         "--github-cfg",
         "--github-username",
-        "--github-api-token",
+        "--github-token",
         "--github-completed",
     ],
 )
