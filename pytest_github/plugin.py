@@ -184,9 +184,13 @@ class GitHubPytestPlugin(object):
     def __parse_issue_url(self, url):
         # Parse the github URL
         match = re.match(r'https?://github.com/([^/]+)/([^/]+)/(?:issues|pull)/([0-9]+)$', url)
-        if match is None:
-            raise Exception("Unhandled github issue URL: %s" % url)
-        return match.groups()
+        if match:
+            return match.groups()
+        else:
+            errstr = "Malformed github issue URL: %s" % url
+            raise Exception(errstr)
+            # warnings.warn(errstr, Warning)
+            # return (None, None, None)
 
     def __cache_github_issues(self, items):
         """Collect github markers and populate the issue_cache."""
@@ -200,8 +204,10 @@ class GitHubPytestPlugin(object):
 
                     try:
                         _issue_cache[issue_url] = self.api.issue(username, repository, number)
-                    except AttributeError:
-                        errstr = "Unable to inspect github issue %s" % issue_url
+                    except (AttributeError, github3.models.GitHubError) as e:
+                        print dir(e)
+                        print e.message
+                        errstr = "Unable to inspect github issue %s (%s)" % (issue_url, e.message)
                         warnings.warn(errstr, Warning)
             item.funcargs["github_issues"] = issue_urls
 
@@ -220,7 +226,7 @@ class GitHubPytestPlugin(object):
 
             issue = _issue_cache[issue_url]
 
-            issue_labels = [l.name for l in issue.labels()]
+            issue_labels = [l.name for l in issue.labels]
 
             # if the issue is open and isn't considered "completed" by any of the issue labels ...
             if not issue.is_closed() and not set(self.completed_labels).intersection(issue_labels):
@@ -232,15 +238,20 @@ class GitHubPytestPlugin(object):
             skip = item.get_marker('github').kwargs.get('skip', False)
             if False and skip:
                 pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
-                    "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues])))
+                    "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues])))
             else:
                 item.add_marker(pytest.mark.xfail(
                     reason="Xfailing due to unresolved github issues: \n{0}".format(
-                        "\n ".join(["{0} [{1}] {2}".format(i.url, i.state, i.title) for i in unresolved_issues]))))
+                        "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues]))))
 
     def pytest_collection_modifyitems(self, session, config, items):
         """Report number of github issues collected."""
         log.debug("pytest_collection_modifyitems() called")
+
+        # Clear existing cache
+        # global _issue_cache
+        # _issue_cache = {}
+
         reporter = config.pluginmanager.getplugin("terminalreporter")
         reporter.write("collected", bold=True)
 

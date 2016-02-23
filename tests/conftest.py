@@ -82,6 +82,7 @@ class FakeIssue(object):
         else:
             return 'open'
 
+    @property
     def labels(self):
         return [FakeLabel()]
 

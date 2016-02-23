@@ -139,6 +139,7 @@ def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, 
     assert 'No github issues collected' in stdout
 
 
+@pytest.mark.usefixtures('monkeypatch_github3')
 def test_param_github_summary_multiple_issues(testdir, option, capsys, closed_issues, open_issues):
     '''verifies the --github-summary parameter when multiple github issues are found.'''
 
