@@ -69,11 +69,11 @@ class FakeGitHub(object):
 
 class FakeIssue(object):
     def __init__(self, *args, **kwargs):
-        self.url = "https://github.com/{0}/{1}/issues/{2}".format(*args)
+        self.html_url = "https://github.com/{0}/{1}/issues/{2}".format(*args)
         self.title = 'Mock issue title'
 
     def is_closed(self):
-        return 'closed' in self.url.lower() and True or False
+        return 'closed' in self.html_url.lower() and True or False
 
     @property
     def state(self):
