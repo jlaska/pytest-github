@@ -103,7 +103,7 @@ def pytest_configure(config):
                 github_cfg = yaml.load(fd)
                 try:
                     github_cfg = github_cfg.get('github', {})
-                except AttributeError, e:
+                except AttributeError as e:
                     github_cfg = {}
                     errstr = "No github configuration found in file: %s (%s)" % (os.path.realpath(github_cfg_file), e)
                     log.warning(errstr)

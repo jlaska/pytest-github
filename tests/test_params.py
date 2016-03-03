@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import pytest
 import mock
 from _pytest.main import EXIT_OK, EXIT_NOTESTSCOLLECTED, EXIT_INTERRUPTED
@@ -125,8 +126,7 @@ def test_param_default_cfg(testdir, option, open_issues):
     testdir.makefile('.yml', github=content)
     mo = mock.mock_open(read_data=content)
 
-    from sys import version_info
-    if version_info.major == 2:
+    if sys.version_info[0] == 2:
         import __builtin__ as builtins  # NOQA
     else:
         import builtins  # NOQA
