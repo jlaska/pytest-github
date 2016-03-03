@@ -21,30 +21,44 @@ def test_success_without_issue(testdir, option):
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
-def test_success_with_open_issue(testdir, option, open_issues):
+@pytest.mark.parametrize(
+    "skip,expected_outcome",
+    [
+        (False, dict(xpassed=1)),
+        (True, dict(skipped=1)),
+    ],
+)
+def test_success_with_open_issue(testdir, option, open_issues, skip, expected_outcome):
     '''Verifies test when an open github issue is specified.'''
 
     src = """
         import pytest
-        @pytest.mark.github('%s')
+        @pytest.mark.github('%s'%s)
         def test_func():
             assert True
-    """ % open_issues[0]
+    """ % (open_issues[0], skip and ', skip=True' or '')
     result = testdir.inline_runsource(src, *option.args)
     assert result.ret == EXIT_OK
-    assert_outcome(result, xpassed=1)
+    assert_outcome(result, **expected_outcome)
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
-def test_success_with_closed_issue(testdir, option, closed_issues):
+@pytest.mark.parametrize(
+    "skip,expected_outcome",
+    [
+        (False, dict(passed=1)),
+        (True, dict(passed=1)),
+    ],
+)
+def test_success_with_closed_issue(testdir, option, closed_issues, skip, expected_outcome):
     '''Verifies test when a closed github issue is specified.'''
 
     src = """
         import pytest
-        @pytest.mark.github('%s')
+        @pytest.mark.github('%s'%s)
         def test_func():
             assert True
-    """ % closed_issues[0]
+    """ % (closed_issues[0], skip and ', skip=True' or '')
     result = testdir.inline_runsource(src, *option.args)
     assert result.ret == EXIT_OK
     assert_outcome(result, passed=1)
@@ -65,33 +79,47 @@ def test_failure_without_issue(testdir, option):
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
-def test_failure_with_open_issue(testdir, option, open_issues):
+@pytest.mark.parametrize(
+    "skip,expected_outcome",
+    [
+        (False, dict(xfailed=1)),
+        (True, dict(skipped=1)),
+    ],
+)
+def test_failure_with_open_issue(testdir, option, open_issues, skip, expected_outcome):
     '''Verifies test when an open github issue is specified.'''
 
     src = """
         import pytest
-        @pytest.mark.github('%s')
+        @pytest.mark.github('%s'%s)
         def test_func():
             assert False
-    """ % open_issues[0]
+    """ % (open_issues[0], skip and ', skip=True' or '')
     result = testdir.inline_runsource(src, *option.args)
     assert result.ret == EXIT_OK
-    assert_outcome(result, xfailed=1)
+    assert_outcome(result, **expected_outcome)
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
-def test_failure_with_closed_issue(testdir, option, closed_issues):
+@pytest.mark.parametrize(
+    "skip,expected_outcome",
+    [
+        (False, dict(failed=1)),
+        (True, dict(failed=1)),
+    ],
+)
+def test_failure_with_closed_issue(testdir, option, closed_issues, skip, expected_outcome):
     '''Verifies test when a closed github issue is specified.'''
 
     src = """
         import pytest
-        @pytest.mark.github('%s')
+        @pytest.mark.github('%s'%s)
         def test_func():
             assert False
-    """ % closed_issues[0]
+    """ % (closed_issues[0], skip and ', skip=True' or '')
     result = testdir.inline_runsource(src, *option.args)
     assert result.ret == EXIT_TESTSFAILED
-    assert_outcome(result, failed=1)
+    assert_outcome(result, **expected_outcome)
 
 
 @pytest.mark.parametrize(

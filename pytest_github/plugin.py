@@ -238,7 +238,7 @@ class GitHubPytestPlugin(object):
         if unresolved_issues:
             # TODO - Add support for skip vs xfail
             skip = item.get_marker('github').kwargs.get('skip', False)
-            if False and skip:
+            if skip:
                 pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
                     "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues])))
             else:
