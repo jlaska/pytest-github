@@ -76,11 +76,21 @@ def test_param_github_cfg_containing_no_data(testdir, option, recwarn):
     '''Verifies pytest-github ignores --github-cfg files that contain bogus data'''
 
     # Create bogus config file for testing
-    cfg_file = testdir.makefile('.txt', '')
+    # FIXME: I'm unclear why I need to create the file since I'm using
+    # mock_open() ... tbd
+    cfg_file = testdir.makefile('.yml', '')
 
-    # Run with parameter (expect pass)
-    result = testdir.runpytest(*['--github-cfg', str(cfg_file)])
-    assert result.ret == EXIT_OK
+    # mock an empty github.yml
+    mo = mock.mock_open(read_data='')
+
+    with mock.patch('pytest_github.plugin.open', mo, create=True):
+        result = testdir.runpytest(*['--github-cfg', str(cfg_file)])
+
+    # Assert py.test exit code
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock open called on provided file
+    mo.assert_called_once_with(str(cfg_file), 'r')
 
     # check that only one warning was raised
     assert len(recwarn) == 1
@@ -91,7 +101,48 @@ def test_param_github_cfg_containing_no_data(testdir, option, recwarn):
     assert str(record.message).startswith("No github configuration found in file: ")
 
 
-def test_param_github_cfg(testdir, option, open_issues):
+def test_param_default_cfg(testdir, option, open_issues):
+    '''verifies pytest-github loads configuration from the default configuration file'''
+
+    # the following would normally xpass, but when completed=['ready_for_test'], it
+    # will just pass
+    src = """\
+        import pytest
+        def test_func():
+            assert True
+    """
+
+    # mock the contents of github.yml
+    content = """\
+        github:
+            username: ''
+            token: ''
+            completed:
+                - 'state:Ready For Test'
+    """
+    # FIXME: I'm unclear why I need to create the file since I'm using
+    # mock_open() ... tbd
+    testdir.makefile('.yml', github=content)
+    mo = mock.mock_open(read_data=content)
+
+    from sys import version_info
+    if version_info.major == 2:
+        import __builtin__ as builtins  # NOQA
+    else:
+        import builtins  # NOQA
+    # with mock.patch.object(builtins, 'open', mo, create=True):
+
+    with mock.patch('pytest_github.plugin.open', mo, create=True):
+        result = testdir.inline_runsource(src)
+
+        # Assert py.test exit code
+    assert result.ret == EXIT_OK
+
+    # Assert mock open called on provided file
+    mo.assert_called_once_with('github.yml', 'r')
+
+
+def test_param_custom_cfg(testdir, option, open_issues):
     '''verifies pytest-github loads completed info from provided --github-cfg parameter'''
 
     # create github.yml config for testing

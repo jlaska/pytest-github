@@ -90,23 +90,22 @@ def pytest_configure(config):
     github_token = config.getoption('github_token')
     github_completed = config.getoption('github_completed')
 
-    # If not --help or --collectonly or --showfixtures ...
+    # If not --help or --showfixtures ...
     if not (config.option.help or config.option.showfixtures):
         # Warn if file does not exist
         if not os.path.isfile(github_cfg_file):
             errstr = "No github configuration file found matching: %s" % github_cfg_file
             log.warning(errstr)
             warnings.warn(errstr, Warning)
-
-        # Load configuration file ...
-        if os.path.isfile(github_cfg_file):
+        else:
+            # Load configuration file ...
             with open(github_cfg_file, 'r') as fd:
                 github_cfg = yaml.load(fd)
                 try:
                     github_cfg = github_cfg.get('github', {})
-                except AttributeError:
+                except AttributeError, e:
                     github_cfg = {}
-                    errstr = "No github configuration found in file: %s" % github_cfg_file
+                    errstr = "No github configuration found in file: %s (%s)" % (os.path.realpath(github_cfg_file), e)
                     log.warning(errstr)
                     warnings.warn(errstr, Warning)
 
@@ -117,16 +116,9 @@ def pytest_configure(config):
             if github_completed is None or github_completed == []:
                 github_completed = github_cfg.get('completed', [])
 
-        # Initialize github api connection
-        api = github3.login(github_username, github_token)
-
-        # If completed is still empty, load default ...
-        if github_completed is None or github_completed == []:
-            github_completed = GITHUB_COMPLETED_LABELS
-
         # Register pytest plugin
         assert config.pluginmanager.register(
-            GitHubPytestPlugin(api, completed_labels=github_completed),
+            GitHubPytestPlugin(github_username, github_token, completed_labels=github_completed),
             'github_helper'
         )
 
@@ -172,12 +164,24 @@ class GitHubPytestPlugin(object):
 
     """GitHub Plugin class."""
 
-    def __init__(self, api, **kwargs):
+    def __init__(self, username, password, completed_labels=[]):
         """Initialize attributes."""
         log.debug("GitHubPytestPlugin initialized")
-        self.api = api
+
+        # initialize issue cache
         self._issue_cache = {}
-        self.completed_labels = kwargs.get('completed_labels', [])
+
+        # Process parameters
+        self.username = username
+        self.password = password
+        # Initialize completed_labels
+        if completed_labels is None or completed_labels == []:
+            self.completed_labels = GITHUB_COMPLETED_LABELS
+        else:
+            self.completed_labels = completed_labels
+
+        # Initialize github api connection
+        self.api = github3.login(self.username, self.password)
 
     def __parse_issue_url(self, url):
         # Parse the github URL
