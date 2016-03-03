@@ -191,8 +191,6 @@ class GitHubPytestPlugin(object):
         except AttributeError:
             errstr = "Malformed github issue URL: '%s'" % url
             raise Exception(errstr)
-            # warnings.warn(errstr, Warning)
-            # return (None, None, None)
 
     def __cache_github_issues(self, items):
         """Collect github markers and populate the issue_cache."""
