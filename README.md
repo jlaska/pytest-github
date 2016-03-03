@@ -101,7 +101,7 @@ test.py::test_will_pass PASSED
 
 ### Example: FAILED
 
-The following example demonstrates a test that fails, whlie it is associated with a _closed_ GitHub issue.
+The following example demonstrates a test that fails, while it is associated with a _closed_ GitHub issue.
 
 ```python
 @pytest.mark.github('https://github.com/some/closed/issues/2')
@@ -113,5 +113,21 @@ In this example, the ``FAILED`` outcome is used.
 
 ```
 test.py::test_will_fail FAILED
+```
+
+### Example: SKIPPED
+
+The following example demonstrates a test that fails, while it is associated with an _open_ GitHub issue.
+
+```python
+@pytest.mark.github('https://github.com/some/open/issues/1', skip=True)
+def test_will_skip():
+    assert False
+```
+
+In this example, the ``SKIPPED`` outcome is used.
+
+```
+test.py::test_will_skip SKIPPED
 ```
 
