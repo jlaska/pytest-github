@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-import sys
 import pytest
 import mock
-from _pytest.main import EXIT_OK, EXIT_NOTESTSCOLLECTED, EXIT_INTERRUPTED
+from _pytest.main import EXIT_OK, EXIT_NOTESTSCOLLECTED, EXIT_INTERRUPTED  # NOQA
 from . import assert_outcome
 
 
@@ -58,40 +57,66 @@ def test_param_requires_value(testdir, option, required_value_parameter):
     ])
 
 
-def test_param_github_cfg_with_no_such_file(testdir, option, recwarn):
-    '''Verifies pytest-github ignores any bogus files passed to --github-cfg'''
+def test_param_default_cfg(testdir):
+    '''verifies pytest-github loads configuration from the default configuration file'''
 
-    result = testdir.runpytest(*['--github-cfg', 'asdfasdf'])
-    assert result.ret == EXIT_NOTESTSCOLLECTED
-
-    # check that only one warning was raised
-    assert len(recwarn) == 1
-    # check that the category matches
-    record = recwarn.pop(Warning)
-    assert issubclass(record.category, Warning)
-    # check that the message matches
-    assert str(record.message) == "No github configuration file found matching: asdfasdf"
-
-
-def test_param_github_cfg_containing_no_data(testdir, option, recwarn):
-    '''Verifies pytest-github ignores --github-cfg files that contain bogus data'''
-
-    # Create bogus config file for testing
-    # FIXME: I'm unclear why I need to create the file since I'm using
-    # mock_open() ... tbd
-    cfg_file = testdir.makefile('.yml', '')
-
-    # mock an empty github.yml
-    mo = mock.mock_open(read_data='')
-
-    with mock.patch('pytest_github.plugin.open', mo, create=True):
-        result = testdir.runpytest(*['--github-cfg', str(cfg_file)])
+    with mock.patch('os.path.isfile', return_value=True):
+        with mock.patch('pytest_github.plugin.open', mock.mock_open(read_data=''), create=True) as mock_open:
+            result = testdir.runpytest()
 
     # Assert py.test exit code
     assert result.ret == EXIT_NOTESTSCOLLECTED
 
     # Assert mock open called on provided file
-    mo.assert_called_once_with(str(cfg_file), 'r')
+    mock_open.assert_called_once_with('github.yml', 'r')
+
+
+def test_param_missing_cfg(testdir, recwarn):
+    '''Verifies pytest-github handles when no github.yml is present.'''
+
+    with mock.patch('os.path.isfile', return_value=False) as mock_isfile:
+        result = testdir.runpytest()
+
+    # Assert py.test exit code
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock open called on provided file
+    mock_isfile.assert_called_once_with('github.yml')
+
+    # NOTE Disabled for now b/c recwarn sets warnings.simplefilter('default') so any
+    # duplicate warnings are ignored.
+    if False:
+        # check that only one warning was raised
+        assert len(recwarn) == 1
+        # check that the category matches
+        record = recwarn.pop(Warning)
+        assert issubclass(record.category, Warning)
+        # check that the message matches
+        assert str(record.message) == "No github configuration file found matching: github.yml"
+
+
+def test_param_empty_cfg(testdir, recwarn):
+    '''Verifies pytest-github ignores --github-cfg files that contain bogus data'''
+
+    # mock an empty github.yml
+    content = ''
+
+    with mock.patch('os.path.isfile', return_value=True) as mock_isfile:
+        with mock.patch('pytest_github.plugin.open', mock.mock_open(read_data=content), create=True) as mock_open:
+            with mock.patch('pytest_github.plugin.GitHubPytestPlugin') as mock_plugin:
+                result = testdir.runpytest()
+
+    # Assert py.test exit code
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock isfile called
+    mock_isfile.assert_called_once_with('github.yml')
+
+    # Assert mock open called on provided file
+    mock_open.assert_called_once_with('github.yml', 'r')
+
+    # Assert plugin initialized as expected
+    mock_plugin.assert_called_once_with(None, None, completed_labels=[])
 
     # check that only one warning was raised
     assert len(recwarn) == 1
@@ -102,77 +127,35 @@ def test_param_github_cfg_containing_no_data(testdir, option, recwarn):
     assert str(record.message).startswith("No github configuration found in file: ")
 
 
-def test_param_default_cfg(testdir, option, open_issues):
-    '''verifies pytest-github loads configuration from the default configuration file'''
-
-    # the following would normally xpass, but when completed=['ready_for_test'], it
-    # will just pass
-    src = """\
-        import pytest
-        def test_func():
-            assert True
-    """
-
-    # mock the contents of github.yml
-    content = """\
-        github:
-            username: ''
-            token: ''
-            completed:
-                - 'state:Ready For Test'
-    """
-    # FIXME: I'm unclear why I need to create the file since I'm using
-    # mock_open() ... tbd
-    testdir.makefile('.yml', github=content)
-    mo = mock.mock_open(read_data=content)
-
-    if sys.version_info[0] == 2:
-        import __builtin__ as builtins  # NOQA
-    else:
-        import builtins  # NOQA
-    # with mock.patch.object(builtins, 'open', mo, create=True):
-
-    with mock.patch('pytest_github.plugin.open', mo, create=True):
-        result = testdir.inline_runsource(src)
-
-        # Assert py.test exit code
-    assert result.ret == EXIT_OK
-
-    # Assert mock open called on provided file
-    mo.assert_called_once_with('github.yml', 'r')
-
-
-def test_param_custom_cfg(testdir, option, open_issues):
+@pytest.mark.parametrize("username,password,completed_labels", [('montgomery', 'burns', ['some-label'])],)
+def test_param_custom_cfg(request, testdir, option, username, password, completed_labels):
     '''verifies pytest-github loads completed info from provided --github-cfg parameter'''
 
     # create github.yml config for testing
-    contents = '''
+    content = """\
     github:
-        username: ''
-        token: ''
-        completed:
-            - 'state:Ready For Test'
-    '''
-    cfg_file = testdir.makefile('.yml', contents)
+        username: '%s'
+        token: '%s'
+        completed: %s
+    """ % (username, password, completed_labels)
+    cfg_file = 'dummy.yml'
 
-    # the following would normally xpass, but when completed=['ready_for_test'], it
-    # will just pass
-    src = """
-        import pytest
-        @pytest.mark.github('%s')
-        def test_func():
-            assert True
-        """ % open_issues[0]
-
-    mo = mock.mock_open()
-    with mock.patch('pytest_github.plugin.open', mo, create=True):
-        result = testdir.inline_runsource(src, *['--github-cfg', str(cfg_file)])
+    with mock.patch('os.path.isfile', return_value=True) as mock_isfile:
+        with mock.patch('pytest_github.plugin.open', mock.mock_open(read_data=content), create=True) as mock_open:
+            with mock.patch('pytest_github.plugin.GitHubPytestPlugin') as mock_plugin:
+                result = testdir.runpytest(*['--github-cfg', str(cfg_file)])
 
     # Assert py.test exit code
-    assert result.ret == EXIT_OK
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock isfile called
+    mock_isfile.assert_called_once_with(str(cfg_file))
 
     # Assert mock open called on provided file
-    mo.assert_called_once_with(str(cfg_file), 'r')
+    mock_open.assert_called_once_with(str(cfg_file), 'r')
+
+    # Assert plugin initialized as expected
+    mock_plugin.assert_called_once_with(username, password, completed_labels=completed_labels)
 
 
 def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, open_issues):

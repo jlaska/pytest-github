@@ -9,7 +9,6 @@ import os
 import logging
 import yaml
 import pytest
-import py  # NOQA
 import re
 import github3
 import warnings
@@ -91,11 +90,10 @@ def pytest_configure(config):
     github_completed = config.getoption('github_completed')
 
     # If not --help or --showfixtures ...
-    if not (config.option.help or config.option.showfixtures):
+    if not (config.option.help or config.option.showfixtures or config.option.markers):
         # Warn if file does not exist
         if not os.path.isfile(github_cfg_file):
             errstr = "No github configuration file found matching: %s" % github_cfg_file
-            log.warning(errstr)
             warnings.warn(errstr, Warning)
         else:
             # Load configuration file ...
@@ -104,17 +102,15 @@ def pytest_configure(config):
                 try:
                     github_cfg = github_cfg.get('github', {})
                 except AttributeError as e:
-                    github_cfg = {}
                     errstr = "No github configuration found in file: %s (%s)" % (os.path.realpath(github_cfg_file), e)
-                    log.warning(errstr)
                     warnings.warn(errstr, Warning)
-
-            if github_username is None:
-                github_username = github_cfg.get('username', None)
-            if github_token is None:
-                github_token = github_cfg.get('token', None)
-            if github_completed is None or github_completed == []:
-                github_completed = github_cfg.get('completed', [])
+                else:
+                    if github_username is None:
+                        github_username = github_cfg.get('username', None)
+                    if github_token is None:
+                        github_token = github_cfg.get('token', None)
+                    if github_completed is None or github_completed == []:
+                        github_completed = github_cfg.get('completed', [])
 
         # Register pytest plugin
         assert config.pluginmanager.register(
