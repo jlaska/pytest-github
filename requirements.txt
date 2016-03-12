@@ -1,6 +1,5 @@
 tox
 pytest
-pytest-cov
 pytest-flake8
 coverage
 coveralls

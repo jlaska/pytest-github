@@ -13,4 +13,4 @@ before_script:
 script:
     - tox
 after_success:
-    - coveralls
+    - TOXENV=coveralls tox
