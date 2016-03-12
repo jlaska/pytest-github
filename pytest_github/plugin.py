@@ -159,7 +159,7 @@ class GitHubPytestPlugin(object):
 
     """GitHub Plugin class."""
 
-    def __init__(self, username, password, completed_labels=[]):
+    def __init__(self, username, password, completed_labels=GITHUB_COMPLETED_LABELS):
         """Initialize attributes."""
         log.debug("GitHubPytestPlugin initialized")
 
@@ -169,11 +169,7 @@ class GitHubPytestPlugin(object):
         # Process parameters
         self.username = username
         self.password = password
-        # Initialize completed_labels
-        if completed_labels is None or completed_labels == []:
-            self.completed_labels = GITHUB_COMPLETED_LABELS
-        else:
-            self.completed_labels = completed_labels
+        self.completed_labels = GITHUB_COMPLETED_LABELS
 
         # Initialize github api connection
         self.api = github3.login(self.username, self.password)
