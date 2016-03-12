@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.0.4 (2016-03-12)
+
+* Fix command-line parameter override and add tests
+
 ### 0.0.3 (2016-03-03)
 
 * Make pytest_github actually work

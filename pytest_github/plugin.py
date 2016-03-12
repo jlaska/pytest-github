@@ -48,14 +48,12 @@ def pytest_addoption(parser):
     group.addoption('--github-username',
                     action='store',
                     dest='github_username',
-                    default=None,
                     metavar='GITHUB_USERNAME',
                     help='GitHub username (defaults to value supplied in GITHUB_CFG)')
     group.addoption('--github-token',
                     action='store',
                     dest='github_token',
                     metavar='GITHUB_TOKEN',
-                    default=None,
                     help='GitHub Personal Access token (defaults to value ' +
                     'supplied in GITHUB_CFG). Refer to ' +
                     'https://github.com/blog/1509-personal-api-tokens')
@@ -83,34 +81,35 @@ def pytest_configure(config):
     # Add marker
     config.addinivalue_line("markers", "github(*args): GitHub issue integration")
 
-    # Sanitize key and token
+    # Initialize parameters
     github_cfg_file = config.getoption('github_cfg_file')
-    github_username = config.getoption('github_username')
-    github_token = config.getoption('github_token')
-    github_completed = config.getoption('github_completed')
+    github_username = None
+    github_token = None
+    github_completed = []
 
     # If not --help or --showfixtures ...
     if not (config.option.help or config.option.showfixtures or config.option.markers):
-        # Warn if file does not exist
-        if not os.path.isfile(github_cfg_file):
-            errstr = "No github configuration file found matching: %s" % github_cfg_file
-            warnings.warn(errstr, Warning)
-        else:
+        # Load config file, if available
+        if os.path.isfile(github_cfg_file):
             # Load configuration file ...
             with open(github_cfg_file, 'r') as fd:
                 github_cfg = yaml.load(fd)
-                try:
-                    github_cfg = github_cfg.get('github', {})
-                except AttributeError as e:
-                    errstr = "No github configuration found in file: %s (%s)" % (os.path.realpath(github_cfg_file), e)
-                    warnings.warn(errstr, Warning)
-                else:
-                    if github_username is None:
-                        github_username = github_cfg.get('username', None)
-                    if github_token is None:
-                        github_token = github_cfg.get('token', None)
-                    if github_completed is None or github_completed == []:
-                        github_completed = github_cfg.get('completed', [])
+
+            if isinstance(github_cfg, dict) and 'github' in github_cfg and isinstance(github_cfg['github'], dict):
+                github_username = github_cfg['github'].get('username', None)
+                github_token = github_cfg['github'].get('token', None)
+                github_completed = github_cfg['github'].get('completed', [])
+            else:
+                errstr = "No github configuration found in file: %s" % os.path.realpath(github_cfg_file)
+                warnings.warn(errstr, Warning)
+
+        # Override with command-line parameters
+        if config.getoption('github_username'):
+            github_username = config.getoption('github_username')
+        if config.getoption('github_token'):
+            github_token = config.getoption('github_token')
+        if config.getoption('github_completed'):
+            github_completed = config.getoption('github_completed')
 
         # Register pytest plugin
         assert config.pluginmanager.register(

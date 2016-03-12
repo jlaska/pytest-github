@@ -127,17 +127,61 @@ def test_param_empty_cfg(testdir, recwarn):
     assert str(record.message).startswith("No github configuration found in file: ")
 
 
-@pytest.mark.parametrize("username,password,completed_labels", [('montgomery', 'burns', ['some-label'])],)
-def test_param_custom_cfg(request, testdir, option, username, password, completed_labels):
+@pytest.mark.parametrize(
+    "content",
+    [
+        # '',
+        'github: {}',
+        'github: []',
+        'github:',
+        'github: null',
+        'github: 1',
+        'github: "hi"',
+    ]
+)
+def test_param_broken_cfg(testdir, content):
+    '''verifies pytest-github loads completed info from provided --github-cfg parameter'''
+
+    # create github.yml config for testing
+
+    with mock.patch('os.path.isfile', return_value=True) as mock_isfile:
+        with mock.patch('pytest_github.plugin.open', mock.mock_open(read_data=content), create=True) as mock_open:
+            with mock.patch('pytest_github.plugin.GitHubPytestPlugin') as mock_plugin:
+                result = testdir.runpytest()
+
+    # Assert py.test exit code
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock isfile called
+    mock_isfile.assert_called_once_with('github.yml')
+
+    # Assert mock open called on provided file
+    mock_open.assert_called_once_with('github.yml', 'r')
+
+    # Assert plugin initialized as expected
+    mock_plugin.assert_called_once_with(None, None, completed_labels=[])
+
+
+@pytest.mark.parametrize(
+    "username,token,completed_labels",
+    [
+        ('montgomery', 'burns', ['label', 'other']),
+        ('montgomery', 'burns', ['label']),
+        ('montgomery', 'burns', ['']),
+        ('montgomery', '', ['label']),
+        ('', 'burns', ['label']),
+    ],
+)
+def test_param_custom_cfg(testdir, username, token, completed_labels):
     '''verifies pytest-github loads completed info from provided --github-cfg parameter'''
 
     # create github.yml config for testing
     content = """\
     github:
-        username: '%s'
-        token: '%s'
+        username: %s
+        token: %s
         completed: %s
-    """ % (username, password, completed_labels)
+    """ % (repr(username), repr(token), repr(completed_labels))
     cfg_file = 'dummy.yml'
 
     with mock.patch('os.path.isfile', return_value=True) as mock_isfile:
@@ -155,7 +199,53 @@ def test_param_custom_cfg(request, testdir, option, username, password, complete
     mock_open.assert_called_once_with(str(cfg_file), 'r')
 
     # Assert plugin initialized as expected
-    mock_plugin.assert_called_once_with(username, password, completed_labels=completed_labels)
+    mock_plugin.assert_called_once_with(username, token, completed_labels=completed_labels)
+
+
+def test_param_override_cfg(testdir):
+    '''Verifies that pytest-github command-line parameters override values loaded from a config file.'''
+
+    # create github.yml config for testing
+    content = """\
+    github:
+        username: username
+        token: token
+        completed: [completed]
+    """
+
+    expected_username = 'montgomery'
+    expected_token = 'burns'
+    expected_completed = ['waylon', 'smithers']
+
+    with mock.patch('os.path.isfile', return_value=True) as mock_isfile:
+        with mock.patch('pytest_github.plugin.open', mock.mock_open(read_data=content), create=True) as mock_open:
+            with mock.patch('pytest_github.plugin.GitHubPytestPlugin') as mock_plugin:
+                # Build argument string
+                args = [
+                    '--github-username', expected_username,
+                    '--github-token', expected_token,
+                ]
+                for c in expected_completed:
+                    args.append('--github-completed')
+                    args.append(c)
+
+                # Run pytest
+                result = testdir.runpytest(*args)
+
+    # Assert py.test exit code
+    assert result.ret == EXIT_NOTESTSCOLLECTED
+
+    # Assert mock isfile called
+    mock_isfile.assert_called_once_with('github.yml')
+
+    # Assert mock open called on provided file
+    mock_open.assert_called_once_with('github.yml', 'r')
+
+    # Assert plugin initialized as expected
+    mock_plugin.assert_called_once_with(
+        expected_username,
+        expected_token,
+        completed_labels=expected_completed)
 
 
 def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, open_issues):
