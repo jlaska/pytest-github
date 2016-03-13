@@ -115,7 +115,7 @@ def pytest_configure(config):
 
 
 def pytest_cmdline_main(config):
-    """Check show_fixture_duplicates option to show fixture duplicates."""
+    """Check show_github_summary option to display all github fixtures."""
     log.debug("pytest_cmdline_main() called")
     if config.option.show_github_summary:
         from _pytest.main import wrap_session
