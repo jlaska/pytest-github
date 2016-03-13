@@ -21,11 +21,7 @@ except ImportError:
     from logging import Handler
 
     class NullHandler(Handler):
-
-        """NullHandler implementation for python 2.6."""
-
         def emit(self, record):
-            """Fake emit method."""
             pass
 
 log = logging.getLogger(__name__)

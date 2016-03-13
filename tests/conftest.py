@@ -4,32 +4,6 @@ import pytest
 pytest_plugins = 'pytester',
 
 
-class PyTestOption(object):
-
-    def __init__(self, config):
-        self.config = config
-
-    @property
-    def args(self):
-        args = list()
-        args.append('-v')
-#         if self.config.getoption('github_api_key') is not None:
-#             args.append('--github-api-key')
-#             args.append(self.config.getoption('github_api_key'))
-#         if self.config.getoption('github_api_token') is not None:
-#             args.append('--github-api-token')
-#             args.append(self.config.getoption('github_api_token'))
-#         for completed in self.config.getoption('github_completed'):
-#             args.append('--github-completed')
-#             args.append('"%s"' % completed)
-        return args
-
-
-@pytest.fixture()
-def option(request):
-    return PyTestOption(request.config)
-
-
 @pytest.fixture()
 def open_issues(request):
     return [

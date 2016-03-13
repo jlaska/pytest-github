@@ -47,7 +47,7 @@ def test_plugin_markers(testdir):
         "--github-completed",
     ],
 )
-def test_param_requires_value(testdir, option, required_value_parameter):
+def test_param_requires_value(testdir, required_value_parameter):
     '''Verifies failure when not providing a value to a required parameter'''
 
     result = testdir.runpytest(*[required_value_parameter])
@@ -71,7 +71,7 @@ def test_param_default_cfg(testdir):
     mock_open.assert_called_once_with('github.yml', 'r')
 
 
-def test_param_missing_cfg(testdir, recwarn):
+def test_param_missing_cfg(testdir):
     '''Verifies pytest-github handles when no github.yml is present.'''
 
     with mock.patch('os.path.isfile', return_value=False) as mock_isfile:
@@ -82,17 +82,6 @@ def test_param_missing_cfg(testdir, recwarn):
 
     # Assert mock open called on provided file
     mock_isfile.assert_called_once_with('github.yml')
-
-    # NOTE Disabled for now b/c recwarn sets warnings.simplefilter('default') so any
-    # duplicate warnings are ignored.
-    if False:
-        # check that only one warning was raised
-        assert len(recwarn) == 1
-        # check that the category matches
-        record = recwarn.pop(Warning)
-        assert issubclass(record.category, Warning)
-        # check that the message matches
-        assert str(record.message) == "No github configuration file found matching: github.yml"
 
 
 def test_param_empty_cfg(testdir, recwarn):
@@ -248,7 +237,7 @@ def test_param_override_cfg(testdir):
         completed_labels=expected_completed)
 
 
-def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, open_issues):
+def test_param_github_summary_no_issues(testdir, capsys, closed_issues, open_issues):
     '''verifies the --github-summary parameter when no github issues are found.'''
 
     src = """
@@ -256,7 +245,7 @@ def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, 
         def test_foo():
             assert True
     """
-    result = testdir.inline_runsource(src, *option.args + ['--github-summary'])
+    result = testdir.inline_runsource(src, *['--github-summary'])
     assert_outcome(result)
 
     stdout, stderr = capsys.readouterr()
@@ -264,7 +253,7 @@ def test_param_github_summary_no_issues(testdir, option, capsys, closed_issues, 
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
-def test_param_github_summary_multiple_issues(testdir, option, capsys, closed_issues, open_issues):
+def test_param_github_summary_multiple_issues(testdir, capsys, closed_issues, open_issues):
     '''verifies the --github-summary parameter when multiple github issues are found.'''
 
     src = """
@@ -281,8 +270,8 @@ def test_param_github_summary_multiple_issues(testdir, option, capsys, closed_is
         def test_baz():
             assert True
     """ % (closed_issues, open_issues, open_issues + closed_issues)
-    # (items, result) = testdir.inline_genitems(src, *option.args)
-    result = testdir.inline_runsource(src, *option.args + ['--github-summary'])
+    # (items, result) = testdir.inline_genitems(src)
+    result = testdir.inline_runsource(src, *['--github-summary'])
     assert_outcome(result)
 
     stdout, stderr = capsys.readouterr()
