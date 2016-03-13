@@ -1,6 +1,6 @@
 ## Release History
 
-### 0.0.4 (2016-03-12)
+### 0.0.4 (2016-03-13)
 
 * Fix command-line parameter override and add tests
 

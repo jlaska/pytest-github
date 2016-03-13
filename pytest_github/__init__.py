@@ -1,5 +1,5 @@
 """Plugin for py.test that associates tests with github issues using a marker."""
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __author__ = "James Laska"
 __author_email__ = "<jlaska@ansible.com>"
