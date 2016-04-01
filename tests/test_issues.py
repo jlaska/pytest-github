@@ -182,3 +182,67 @@ def test_with_private_issue_link(testdir, recwarn, capsys):
 
     # Assert the warning was found
     assert found, "Unable to find expected warning message - %s" % expected_warning
+
+
+@pytest.mark.usefixtures('monkeypatch_github3')
+@pytest.mark.parametrize('mark_raises,mark_skipped,expected_outcome,expected_exit_code', [
+    ('ZeroDivisionError', False, 'xfailed', EXIT_OK),
+    ('ZeroDivisionError', True, 'skipped', EXIT_OK),
+    ('ValueError', False, 'failed', EXIT_TESTSFAILED),
+    ('ValueError', True, 'skipped', EXIT_OK),
+    ('None', False, 'xfailed', EXIT_OK),
+])
+def test_raises_kwarg_used_with_open_issue_when_exception_is_raised(
+    testdir,
+    open_issues,
+    mark_raises,
+    mark_skipped,
+    expected_outcome,
+    expected_exit_code
+):
+    """Verifiy expected test outcome of an exception-raising test when the
+    raises keyword is used
+    """
+    src = """
+        import pytest
+        @pytest.mark.github('{issue}', skip={skip}, raises={raises})
+        def test_func():
+            raise ZeroDivisionError
+    """.format(issue=open_issues[0], skip=mark_skipped, raises=mark_raises)
+
+    result = testdir.inline_runsource(src)
+
+    assert result.ret == expected_exit_code
+    assert_outcome(result, **{expected_outcome: 1})
+
+
+@pytest.mark.usefixtures('monkeypatch_github3')
+@pytest.mark.parametrize('mark_raises,mark_skipped,expected_outcome,expected_exit_code', [
+    ('ZeroDivisionError', False, 'failed', EXIT_TESTSFAILED),
+    ('ZeroDivisionError', True, 'failed', EXIT_TESTSFAILED),
+    ('ValueError', False, 'failed', EXIT_TESTSFAILED),
+    ('ValueError', True, 'failed', EXIT_TESTSFAILED),
+    ('None', False, 'failed', EXIT_TESTSFAILED),
+])
+def test_raises_kwarg_used_with_closed_issue_when_exception_is_raised(
+    testdir,
+    closed_issues,
+    mark_raises,
+    mark_skipped,
+    expected_outcome,
+    expected_exit_code
+):
+    """Verifiy expected test outcome of an exception-raising test when the
+    raises keyword is used
+    """
+    src = """
+        import pytest
+        @pytest.mark.github('{issue}', skip={skip}, raises={raises})
+        def test_func():
+            raise ZeroDivisionError
+    """.format(issue=closed_issues[0], skip=mark_skipped, raises=mark_raises)
+
+    result = testdir.inline_runsource(src)
+
+    assert result.ret == expected_exit_code
+    assert_outcome(result, **{expected_outcome: 1})

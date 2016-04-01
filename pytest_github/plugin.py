@@ -21,7 +21,11 @@ except ImportError:
     from logging import Handler
 
     class NullHandler(Handler):
+
+        """No-op handler."""
+
         def emit(self, record):
+            """Intentionally do nothing."""
             pass
 
 log = logging.getLogger(__name__)
@@ -225,13 +229,16 @@ class GitHubPytestPlugin(object):
         if unresolved_issues:
             # TODO - Add support for skip vs xfail
             skip = item.get_marker('github').kwargs.get('skip', False)
+            raises = item.get_marker('github').kwargs.get('raises')
+
             if skip:
                 pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
                     "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues])))
             else:
                 item.add_marker(pytest.mark.xfail(
                     reason="Xfailing due to unresolved github issues: \n{0}".format(
-                        "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues]))))
+                        "\n ".join(["{0} [{1}] {2}".format(i.html_url, i.state, i.title) for i in unresolved_issues])),
+                    raises=raises))
 
     def pytest_collection_modifyitems(self, session, config, items):
         """Report number of github issues collected."""
