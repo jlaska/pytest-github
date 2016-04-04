@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.0.5 (2016-04-04)
+
+* Add `raises` kwargs to isolate the exception raised (thanks jakemcdermott)
+
 ### 0.0.4 (2016-03-13)
 
 * Fix command-line parameter override and add tests
