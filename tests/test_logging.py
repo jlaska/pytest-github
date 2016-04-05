@@ -42,7 +42,6 @@ def test_debug_logging(testdir, capsys):
         'DEBUG - pytest_cmdline_main() called',
         'DEBUG - pytest_configure() called',
         'DEBUG - GitHubPytestPlugin initialized',
-        'DEBUG - pytest_collection_modifyitems() called',
         'DEBUG - pytest_runtest_setup() called',
     ]
     # Assert stderr logging

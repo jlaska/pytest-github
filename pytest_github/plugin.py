@@ -183,27 +183,6 @@ class GitHubPytestPlugin(object):
             errstr = "Malformed github issue URL: '%s'" % url
             raise Exception(errstr)
 
-    def __cache_github_issues(self, items):
-        """Collect github markers and populate the issue_cache."""
-        for item in filter(lambda i: i.get_marker("github") is not None, items):
-            marker = item.get_marker('github')
-            issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
-            for issue_url in issue_urls:
-                # Handle missing/bogus args
-                if issue_url is None:
-                    continue
-                # Parse github issue
-                if issue_url not in self._issue_cache:
-                    # parse the URL
-                    (username, repository, number) = self.__parse_issue_url(issue_url)
-
-                    try:
-                        self._issue_cache[issue_url] = self.api.issue(username, repository, number)
-                    except (AttributeError, github3.models.GitHubError) as e:
-                        errstr = "Unable to inspect github issue %s - %s" % (issue_url, str(e))
-                        warnings.warn(errstr, Warning)
-            item.funcargs["github_issues"] = issue_urls
-
     def pytest_runtest_setup(self, item):
         """Handle github marker by calling xfail or skip, as needed."""
         log.debug("pytest_runtest_setup() called")
@@ -242,12 +221,44 @@ class GitHubPytestPlugin(object):
 
     def pytest_collection_modifyitems(self, session, config, items):
         """Report number of github issues collected."""
-        log.debug("pytest_collection_modifyitems() called")
-
         reporter = config.pluginmanager.getplugin("terminalreporter")
-        reporter.write("collected", bold=True)
+        reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
 
-        # cache the issues
-        self.__cache_github_issues(items)
+    def pytest_collectstart(self, collector):
+        """Initialize github issue cache when starting collection."""
+        # initialize issue cache
+        self._issue_cache = {}
 
-        reporter.write_line(" {0} github issues".format(len(self._issue_cache)), bold=True)
+        # display status
+        # DISABLED since this interferes with the built-in collectstart report
+        # reporter = collector.config.pluginmanager.getplugin("terminalreporter")
+        # reporter.write_line("collecting github issues ...", bold=True)
+
+    def pytest_itemcollected(self, item):
+        """While collecting items, cache any github issues."""
+        marker = item.get_marker('github')
+
+        if marker is None or not hasattr(item, 'funcargs'):
+            return
+
+        issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
+        for issue_url in issue_urls:
+            # Handle missing/bogus args
+            if issue_url is None:
+                continue
+            # Parse github issue
+            if issue_url not in self._issue_cache:
+                # parse the URL
+                (username, repository, number) = self.__parse_issue_url(issue_url)
+
+                try:
+                    self._issue_cache[issue_url] = self.api.issue(username, repository, number)
+                except (AttributeError, github3.models.GitHubError) as e:
+                    errstr = "Unable to inspect github issue %s - %s" % (issue_url, str(e))
+                    warnings.warn(errstr, Warning)
+        item.funcargs["github_issues"] = issue_urls
+
+        # display status
+        # DISABLED since this interferes with the built-in itemcollected report
+        # reporter = item.config.pluginmanager.getplugin("terminalreporter")
+        # reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
