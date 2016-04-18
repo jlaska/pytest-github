@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.0.6 (2016-04-18)
+
+* Use pytest_itemcollected for issue collection
+
 ### 0.0.5 (2016-04-04)
 
 * Add `raises` kwargs to isolate the exception raised (thanks jakemcdermott)
