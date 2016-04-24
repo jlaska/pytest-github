@@ -39,6 +39,35 @@ def test_collection_reporter_multiple_issues_one_per_test(testdir, capsys, close
     assert 'collected %s github issues' % 2 in stdout
 
 
+def test_collection_with_issues_in_multiple_modules(testdir, capsys, closed_issues, open_issues):
+    """verifies the github collection when multiple marked issues exist
+    across more than one test module
+    """
+    template = '''
+        import pytest
+        @pytest.mark.github('{0}')
+        def test_foo_fiz():
+            assert True
+
+        @pytest.mark.github('{1}')
+        def test_foo_buz():
+            assert True
+    '''
+
+    test_modules = {
+        'test_foo': template.format(closed_issues[0], open_issues[0]),
+        'test_bar': template.format(closed_issues[1], open_issues[1]),
+    }
+
+    testdir.makepyfile(**test_modules)
+    
+    result = testdir.runpytest_inprocess('--collectonly')
+    stdout, stderr = capsys.readouterr()
+
+    assert result.ret == EXIT_OK
+    assert 'collected 4 github issues' in stdout
+
+
 def test_collection_reporter_multiple_issues_per_test(testdir, capsys, closed_issues, open_issues):
     '''verifies the github collection'''
 
