@@ -224,41 +224,20 @@ class GitHubPytestPlugin(object):
         reporter = config.pluginmanager.getplugin("terminalreporter")
         reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
 
-    def pytest_collectstart(self, collector):
-        """Initialize github issue cache when starting collection."""
-        # initialize issue cache
-        self._issue_cache = {}
-
-        # display status
-        # DISABLED since this interferes with the built-in collectstart report
-        # reporter = collector.config.pluginmanager.getplugin("terminalreporter")
-        # reporter.write_line("collecting github issues ...", bold=True)
-
     def pytest_itemcollected(self, item):
         """While collecting items, cache any github issues."""
         marker = item.get_marker('github')
 
-        if marker is None or not hasattr(item, 'funcargs'):
-            return
+        if marker is not None and hasattr(item, 'funcargs'):
+            issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
+            for url in issue_urls:
+                # add uncached issues to issue cache
+                if url is not None and url not in self._issue_cache:
+                    (username, repository, number) = self.__parse_issue_url(url)
+                    try:
+                        self._issue_cache[url] = self.api.issue(username, repository, number)
+                    except (AttributeError, github3.models.GitHubError) as e:
+                        errstr = "Unable to inspect github issue %s - %s" % (url, str(e))
+                        warnings.warn(errstr, Warning)
 
-        issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
-        for issue_url in issue_urls:
-            # Handle missing/bogus args
-            if issue_url is None:
-                continue
-            # Parse github issue
-            if issue_url not in self._issue_cache:
-                # parse the URL
-                (username, repository, number) = self.__parse_issue_url(issue_url)
-
-                try:
-                    self._issue_cache[issue_url] = self.api.issue(username, repository, number)
-                except (AttributeError, github3.models.GitHubError) as e:
-                    errstr = "Unable to inspect github issue %s - %s" % (issue_url, str(e))
-                    warnings.warn(errstr, Warning)
-        item.funcargs["github_issues"] = issue_urls
-
-        # display status
-        # DISABLED since this interferes with the built-in itemcollected report
-        # reporter = item.config.pluginmanager.getplugin("terminalreporter")
-        # reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
+            item.funcargs["github_issues"] = issue_urls
