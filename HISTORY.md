@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.0.7 (2016-04-29)
+
+* Fix collection across multiple modules (thanks jakemcdermott)
+
 ### 0.0.6 (2016-04-18)
 
 * Use pytest_itemcollected for issue collection
