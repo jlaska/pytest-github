@@ -144,15 +144,16 @@ def __show_github_summary(config, session):
 
     # Print a summary report
     reporter = config.pluginmanager.getplugin("terminalreporter")
-    reporter.section("github issue report")
-    if issue_map:
-        for issue_url, gpaths in issue_map.items():
-            # FIXME - display the status
-            reporter.write_line("{0}".format(issue_url), bold=True)
-            for gpath in gpaths:
-                reporter.write_line(" - %s" % gpath)
-    else:
-        reporter.write_line("No github issues collected")
+    if reporter:
+        reporter.section("github issue report")
+        if issue_map:
+            for issue_url, gpaths in issue_map.items():
+                # FIXME - display the status
+                reporter.write_line("{0}".format(issue_url), bold=True)
+                for gpath in gpaths:
+                    reporter.write_line(" - %s" % gpath)
+        else:
+            reporter.write_line("No github issues collected")
 
 
 class GitHubPytestPlugin(object):
@@ -222,7 +223,8 @@ class GitHubPytestPlugin(object):
     def pytest_collection_modifyitems(self, session, config, items):
         """Report number of github issues collected."""
         reporter = config.pluginmanager.getplugin("terminalreporter")
-        reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
+        if reporter:
+            reporter.write_line("collected {0} github issues".format(len(self._issue_cache)), bold=True)
 
     def pytest_itemcollected(self, item):
         """While collecting items, cache any github issues."""
