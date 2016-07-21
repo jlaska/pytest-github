@@ -104,6 +104,7 @@ setup(
     },
     # zip_safe=False,
     setup_requires=[
+        'pypandoc<1.2.0',
         'setuptools-markdown'
     ],
     tests_requires=[
