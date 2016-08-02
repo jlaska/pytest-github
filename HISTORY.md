@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.0.8 (2016-08-02)
+
+* Pin to a known working pypandoc release
+
 ### 0.0.7 (2016-04-29)
 
 * Fix collection across multiple modules (thanks jakemcdermott)
