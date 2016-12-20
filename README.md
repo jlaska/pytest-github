@@ -68,6 +68,36 @@ Running this test with ``py.test`` will produce the following output:
 test.py::test_will_xfail xfail
 ```
 
+### Example: Anticipating specific exceptions with the 'raises' keyword
+
+To avoid masking additional failures that might be uncovered by a test while a github issue is being resolved, you can restrict expected failures to specific exceptions using the `raises` keyword argument:
+
+
+```python
+@pytest.mark.github('https://github.com/some/open/issues/1', raises=ZeroDivisionError)
+def test_will_xfail():
+    foo = 1/0
+
+
+@pytest.mark.github('https://github.com/some/open/issues/1', raises=ValueError)
+def test_will_fail():
+    # This test has been marked with an open issue but it will still fail
+    # because the exception raised is different from the one indicated by
+    # the 'raises' keyword.
+    foo = 1/0
+```
+
+Running this test with ``py.test`` will produce the following output:
+
+```bash
+collected 2 items
+collected 1 github issues
+
+test.py::test_will_xfail xfail
+test.py::test_will_fail FAILED
+```
+
+
 ### Example: XPASS
 
 The following example demonstrates a test that succeeds, despite being associated with an _open_ GitHub issue.
