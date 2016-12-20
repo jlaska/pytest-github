@@ -1,5 +1,4 @@
-"""
-pytest-github is a plugin for py.test that allows tests to reference github issues for skip/xfail handling.
+"""Pytest-github is a py.test plugin to skip/xfail tests based on github issue status.
 
 :copyright: see LICENSE for details
 :license: MIT, see LICENSE for more details.
@@ -44,7 +43,7 @@ def pytest_addoption(parser):
                     dest='github_cfg_file',
                     default='github.yml',
                     metavar='GITHUB_CFG',
-                    help='GitHub configuration file (default: %default)')
+                    help='GitHub configuration file (default: %(default)s')
     group.addoption('--github-username',
                     action='store',
                     dest='github_username',

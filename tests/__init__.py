@@ -12,7 +12,7 @@ def assert_outcome(result, passed=0, failed=0, skipped=0, xpassed=0, xfailed=0):
                 actual_count['skipped'] += 1
         elif report.when == 'call':
             if hasattr(report, 'wasxfail'):
-                if report.failed:
+                if report.passed:
                     actual_count['xpassed'] += 1
                 elif report.skipped:
                     actual_count['xfailed'] += 1
@@ -21,8 +21,8 @@ def assert_outcome(result, passed=0, failed=0, skipped=0, xpassed=0, xfailed=0):
         else:
             continue
 
-    assert passed == actual_count['passed'], "Unexpected value for 'passed', %s" % actual_count
-    assert failed == actual_count['failed'], "Unexpected value for 'failed', %s" % actual_count
-    assert skipped == actual_count['skipped'], "Unexpected value for 'skipped', %s" % actual_count
-    assert xfailed == actual_count['xfailed'], "Unexpected value for 'xfailed', %s" % actual_count
-    assert xpassed == actual_count['xpassed'], "Unexpected value for 'xpassed', %s" % actual_count
+    assert passed == actual_count['passed'], "Unexpected value for 'passed' (%s), %s" % (passed, actual_count)
+    assert failed == actual_count['failed'], "Unexpected value for 'failed' (%s), %s" % (failed, actual_count)
+    assert skipped == actual_count['skipped'], "Unexpected value for 'skipped' (%s), %s" % (skipped, actual_count)
+    assert xfailed == actual_count['xfailed'], "Unexpected value for 'xfailed' (%s), %s" % (xfailed, actual_count)
+    assert xpassed == actual_count['xpassed'], "Unexpected value for 'xpassed' (%s), %s" % (xpassed, actual_count)
