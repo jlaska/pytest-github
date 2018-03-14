@@ -104,7 +104,7 @@ setup(
     },
     # zip_safe=False,
     setup_requires=[
-        'pypandoc<1.2.0',
+        'pypandoc',
         'setuptools-markdown'
     ],
     tests_requires=[
@@ -114,10 +114,6 @@ setup(
         'pytest',
         'PyYAML',
         'github3.py',
-    ],
-    dependency_links=[
-        # 'git+ssh://git@github.com/github3py/github3.py@1.0.0a1#egg=github3py',
-        'git+https://github.com/github3py/github3.py@1.0.0a1#egg=github3.py',
     ],
     cmdclass={
         'test': ToxTestCommand,
