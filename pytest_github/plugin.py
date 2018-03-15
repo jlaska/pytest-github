@@ -197,8 +197,11 @@ class GitHubPytestPlugin(object):
                 # warnings.warn(errstr, Warning)
 
             issue = self._issue_cache[issue_url]
-
-            issue_labels = [l.name for l in issue.labels]
+            try:
+                labels = iter(issue.labels)
+            except TypeError:  # github3.py 1.0.0+ uses instance method
+                labels = issue.labels()
+            issue_labels = [l.name for l in labels]
 
             # if the issue is open and isn't considered "completed" by any of the issue labels ...
             if not issue.is_closed() and not set(self.completed_labels).intersection(issue_labels):
