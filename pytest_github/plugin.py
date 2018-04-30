@@ -4,14 +4,16 @@
 :license: MIT, see LICENSE for more details.
 """
 
-import os
 import logging
-import yaml
-import pytest
+import os
 import re
-import github3
 import warnings
+import yaml
+
+import pytest
 from _pytest.resultlog import generic_path
+import github3
+from github3.issues.issue import Issue
 
 # Import, or define, NullHandler
 try:
@@ -126,32 +128,88 @@ def pytest_cmdline_main(config):
         return 0
 
 
+class IssueWrapper(object):
+    
+    def __init__(self, issue, gh_plugin):
+        self.issue = issue
+        self._gh_plugin = gh_plugin
+
+    @property
+    def is_closed(self):
+        return self.issue.is_closed()
+
+    @property
+    def labels(self):
+        try:
+            labels = iter(self.issue.labels)
+        except TypeError:  # github3.py 1.0.0+ uses instance method
+            labels = self.issue.labels()
+        return [l.name for l in labels]
+
+    @property
+    def is_resolved(self):
+        # if the issue is open and isn't considered "completed" by any of the issue labels ...
+        if not self.is_closed and not set(self._gh_plugin.completed_labels).intersection(self.labels):
+            return False
+        return True
+
+    @property
+    def html_url(self):
+        return self.issue.html_url
+
+    @property
+    def state(self):
+        return self.issue.state
+
+    @property
+    def title(self):
+        return self.issue.title
+
+
 def __show_github_summary(config, session):
     """Generate a report that includes all linked GitHub issues, and their status."""
     # collect tests
     session.perform_collect()
 
-    # For each item, collect github markers and a generic_path for the item
-    issue_map = dict()
+    issue_cache = config.pluginmanager.get_plugin('github_helper')._issue_cache
+
+    # For each item, collect github markers and a generic_path for the item.
+    unresolved_issue_map = dict()
+    resolved_issue_map = dict()
     for item in filter(lambda i: i.get_marker("github") is not None, session.items):
         marker = item.get_marker('github')
         issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
         for issue_url in issue_urls:
-            if issue_url not in issue_map:
-                issue_map[issue_url] = list()
-            issue_map[issue_url].append(generic_path(item))
+
+            issue = issue_cache[issue_url]
+            if not issue.is_resolved:
+                if issue_url not in unresolved_issue_map:
+                    unresolved_issue_map[issue_url] = list()
+                unresolved_issue_map[issue_url].append(generic_path(item))
+            if issue.is_resolved:
+                if issue_url not in resolved_issue_map:
+                    resolved_issue_map[issue_url] = list()
+                resolved_issue_map[issue_url].append(generic_path(item))
 
     # Print a summary report
     reporter = config.pluginmanager.getplugin("terminalreporter")
     if reporter:
         reporter.section("github issue report")
-        if issue_map:
-            for issue_url, gpaths in issue_map.items():
-                # FIXME - display the status
+        if unresolved_issue_map:
+            reporter.write_line("Unresolved Issues", bold=True)
+            for issue_url, gpaths in sorted(unresolved_issue_map.items(), key=lambda k: int(k[0].split('/')[-1])):
                 reporter.write_line("{0}".format(issue_url), bold=True)
                 for gpath in gpaths:
                     reporter.write_line(" - %s" % gpath)
-        else:
+        if resolved_issue_map:
+            if unresolved_issue_map:
+                reporter.write_line("")
+            reporter.write_line("Resolved Issues", bold=True)
+            for issue_url, gpaths in sorted(resolved_issue_map.items(), key=lambda k: int(k[0].split('/')[-1])):
+                reporter.write_line("{0}".format(issue_url), bold=True)
+                for gpath in gpaths:
+                    reporter.write_line(" - %s" % gpath)
+        if not unresolved_issue_map and not resolved_issue_map:
             reporter.write_line("No github issues collected")
 
 
@@ -183,6 +241,7 @@ class GitHubPytestPlugin(object):
             errstr = "Malformed github issue URL: '%s'" % url
             raise Exception(errstr)
 
+
     def pytest_runtest_setup(self, item):
         """Handle github marker by calling xfail or skip, as needed."""
         log.debug("pytest_runtest_setup() called")
@@ -197,15 +256,7 @@ class GitHubPytestPlugin(object):
                 # warnings.warn(errstr, Warning)
 
             issue = self._issue_cache[issue_url]
-            try:
-                labels = iter(issue.labels)
-            except TypeError:  # github3.py 1.0.0+ uses instance method
-                labels = issue.labels()
-            issue_labels = [l.name for l in labels]
-
-            # if the issue is open and isn't considered "completed" by any of the issue labels ...
-            if not issue.is_closed() and not set(self.completed_labels).intersection(issue_labels):
-                # consider it unresolved
+            if not issue.is_resolved:
                 unresolved_issues.append(issue)
 
         if unresolved_issues:
@@ -239,7 +290,7 @@ class GitHubPytestPlugin(object):
                 if url is not None and url not in self._issue_cache:
                     (username, repository, number) = self.__parse_issue_url(url)
                     try:
-                        self._issue_cache[url] = self.api.issue(username, repository, number)
+                        self._issue_cache[url] = IssueWrapper(self.api.issue(username, repository, number), self)
                     except (AttributeError, github3.exceptions.GitHubError) as e:
                         errstr = "Unable to inspect github issue %s - %s" % (url, str(e))
                         warnings.warn(errstr, Warning)
