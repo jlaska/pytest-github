@@ -13,7 +13,6 @@ import yaml
 import pytest
 from _pytest.resultlog import generic_path
 import github3
-from github3.issues.issue import Issue
 
 # Import, or define, NullHandler
 try:
