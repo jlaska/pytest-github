@@ -250,6 +250,8 @@ def test_param_github_summary_no_issues(testdir, capsys, closed_issues, open_iss
 
     stdout, stderr = capsys.readouterr()
     assert 'No github issues collected' in stdout
+    assert 'Resolved Issues' not in stdout
+    assert 'Unresolved Issues' not in stdout
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
@@ -276,3 +278,11 @@ def test_param_github_summary_multiple_issues(testdir, capsys, closed_issues, op
 
     stdout, stderr = capsys.readouterr()
     assert 'collected %s github issues' % len(closed_issues + open_issues) in stdout
+    assert 'Unresolved Issues' in stdout
+    assert 'Resolved Issues' in stdout
+    unresolved_text = stdout[stdout.index('Unresolved Issues'):stdout.index('Resolved Issues')]
+    resolved_text = stdout[stdout.index('Resolved Issues'):]
+    for issue in open_issues:
+        assert issue in unresolved_text
+    for issue in closed_issues:
+        assert issue in resolved_text
