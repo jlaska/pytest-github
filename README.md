@@ -161,3 +161,21 @@ In this example, the ``SKIPPED`` outcome is used.
 test.py::test_will_skip SKIPPED
 ```
 
+### Summary of GitHub markers and their associated tests
+
+The `--github-summary` option lists all GitHub issues referenced by a `github` marker. The list is divided into two sections, `Resolved Issues` and `Unresolved Issues`, where an issue is considered resolved if it has one of the `GITHUB_COMPLETED` labels. Beneath each issue is a listing of all tests that reference the issue.
+
+
+Sample output:
+```
+Unresolved Issues
+https://github.com/repo/open/issues/1
+ - test_suite.py:test_foo
+https://github.com/repo/open/issues/2
+ - test_suite.py:test_bar
+
+Resolved Issues
+https://github.com/repo/open/issues/3
+ - test_suite.py:test_baz
+ - test_suite.py:test_bah
+```
