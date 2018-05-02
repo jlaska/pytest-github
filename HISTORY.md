@@ -1,6 +1,6 @@
 ## Release History
 
-### 0.0.10 (2018-05-02)
+### 0.1.0 (2018-05-02)
 
 * Update --github-summary to list resolved/unresolved issues
 
