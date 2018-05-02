@@ -1,5 +1,14 @@
 ## Release History
 
+### 0.0.10 (2018-05-02)
+
+* Update --github-summary to list resolved/unresolved issues
+
+### 0.0.9 (2018-03-16)
+
+* Account for github3.issues.Issue.labels method
+* Remove Python 2.6 support
+
 ### 0.0.8 (2016-08-02)
 
 * Pin to a known working pypandoc release
