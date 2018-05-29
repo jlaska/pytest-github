@@ -226,7 +226,7 @@ class GitHubPytestPlugin(object):
         # Process parameters
         self.username = username
         self.password = password
-        self.completed_labels = GITHUB_COMPLETED_LABELS
+        self.completed_labels = completed_labels
 
         # Initialize github api connection
         self.api = github3.login(self.username, self.password)
