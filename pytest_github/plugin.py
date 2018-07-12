@@ -247,6 +247,24 @@ class GitHubPytestPlugin(object):
         if 'github' not in item.keywords:
             return
 
+        github_marker = item.get_marker('github')
+
+        '''
+        github marker may specify ids=['foo', 'bar']. By specifying ids, only
+        test cases that match those ids will be considered by github marker
+        logic.
+        '''
+        github_marker_ids = github_marker.kwargs.get('ids', [])
+        if github_marker_ids:
+            param_marker = item.get_marker('parametrize')
+            param_marker_ids = []
+            if param_marker:
+                param_marker_ids = param_marker.kwargs.get('ids', [])
+            current_test_id = item.callspec.id
+
+            if current_test_id not in github_marker_ids:
+                return
+
         unresolved_issues = []
         issue_urls = item.funcargs["github_issues"]
         for issue_url in issue_urls:
