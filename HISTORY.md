@@ -1,8 +1,12 @@
 ## Release History
 
+### 0.2.0 (2018-07-12)
+
+* Add support for isolating specific parametrizations (@cmeyersfsu)
+
 ### 0.1.0 (2018-05-02)
 
-* Update --github-summary to list resolved/unresolved issues
+* Update --github-summary to list resolved/unresolved issues (@jladdjr)
 
 ### 0.0.9 (2018-03-16)
 
@@ -15,7 +19,7 @@
 
 ### 0.0.7 (2016-04-29)
 
-* Fix collection across multiple modules (thanks jakemcdermott)
+* Fix collection across multiple modules (@jakemcdermott)
 
 ### 0.0.6 (2016-04-18)
 
@@ -23,7 +27,7 @@
 
 ### 0.0.5 (2016-04-04)
 
-* Add `raises` kwargs to isolate the exception raised (thanks jakemcdermott)
+* Add `raises` kwargs to isolate the exception raised (@jakemcdermott)
 
 ### 0.0.4 (2016-03-13)
 
