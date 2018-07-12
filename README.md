@@ -161,6 +161,23 @@ In this example, the ``SKIPPED`` outcome is used.
 test.py::test_will_skip SKIPPED
 ```
 
+In this example, the ``SKIPPED`` outcome is used.
+
+```
+test.py::test_will_skip SKIPPED
+```
+
+### Example: IDS
+
+The following example demonstrates a parametrize test that uses the ``github`` marker to influence the outcome of a subset of the known failing test.
+
+```python
+@pytest.mark.github('https://github.com/some/open/issues/1', ids=['even2', 'even4'])
+@pytest.mark.parametrize("count", [1, 2, 3, 4], ids=["odd1", "even2", "odd3", "even4"])
+def test_will_xfail(count):
+    assert count % 2
+```
+
 ### Summary of GitHub markers and their associated tests
 
 The `--github-summary` option lists all GitHub issues referenced by a `github` marker. The list is divided into two sections, `Resolved Issues` and `Unresolved Issues`, where an issue is considered resolved if it has one of the `GITHUB_COMPLETED` labels. Beneath each issue is a listing of all tests that reference the issue.
