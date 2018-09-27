@@ -298,7 +298,7 @@ class GitHubPytestPlugin(object):
 
     def pytest_itemcollected(self, item):
         """While collecting items, cache any github issues."""
-        marker = item.get_marker('github')
+        marker = item.get_closest_marker('github')
 
         if marker is not None and hasattr(item, 'funcargs'):
             issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
