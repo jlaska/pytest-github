@@ -128,7 +128,7 @@ def pytest_cmdline_main(config):
 
 
 class IssueWrapper(object):
-    
+
     def __init__(self, issue, gh_plugin):
         self.issue = issue
         self._gh_plugin = gh_plugin
@@ -175,8 +175,8 @@ def __show_github_summary(config, session):
     # For each item, collect github markers and a generic_path for the item.
     unresolved_issue_map = dict()
     resolved_issue_map = dict()
-    for item in filter(lambda i: i.get_marker("github") is not None, session.items):
-        marker = item.get_marker('github')
+    for item in filter(lambda i: i.get_closest_marker("github") is not None, session.items):
+        marker = item.get_closest_marker('github')
         issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
         for issue_url in issue_urls:
 
@@ -247,7 +247,7 @@ class GitHubPytestPlugin(object):
         if 'github' not in item.keywords:
             return
 
-        github_marker = item.get_marker('github')
+        github_marker = item.get_closest_marker('github')
 
         '''
         github marker may specify ids=['foo', 'bar']. By specifying ids, only
@@ -256,7 +256,7 @@ class GitHubPytestPlugin(object):
         '''
         github_marker_ids = github_marker.kwargs.get('ids', [])
         if github_marker_ids:
-            param_marker = item.get_marker('parametrize')
+            param_marker = item.get_closest_marker('parametrize')
             param_marker_ids = []
             if param_marker:
                 param_marker_ids = param_marker.kwargs.get('ids', [])
@@ -278,8 +278,8 @@ class GitHubPytestPlugin(object):
 
         if unresolved_issues:
             # TODO - Add support for skip vs xfail
-            skip = item.get_marker('github').kwargs.get('skip', False)
-            raises = item.get_marker('github').kwargs.get('raises')
+            skip = item.get_closest_marker('github').kwargs.get('skip', False)
+            raises = item.get_closest_marker('github').kwargs.get('raises')
 
             if skip:
                 pytest.skip("Skipping due to unresolved github issues:\n{0}".format(
@@ -298,7 +298,7 @@ class GitHubPytestPlugin(object):
 
     def pytest_itemcollected(self, item):
         """While collecting items, cache any github issues."""
-        marker = item.get_marker('github')
+        marker = item.get_closest_marker('github')
 
         if marker is not None and hasattr(item, 'funcargs'):
             issue_urls = tuple(sorted(set(marker.args)))  # (O_O) for caching
