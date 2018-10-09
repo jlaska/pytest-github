@@ -128,7 +128,7 @@ def pytest_cmdline_main(config):
 
 
 class IssueWrapper(object):
-    
+
     def __init__(self, issue, gh_plugin):
         self.issue = issue
         self._gh_plugin = gh_plugin
