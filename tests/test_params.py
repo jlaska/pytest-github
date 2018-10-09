@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 import pytest
 import mock
-from _pytest.main import EXIT_OK, EXIT_NOTESTSCOLLECTED, EXIT_INTERRUPTED  # NOQA
+from _pytest.main import (
+    EXIT_NOTESTSCOLLECTED,
+    EXIT_USAGEERROR,
+)
 from . import assert_outcome
 
 
@@ -49,9 +52,8 @@ def test_plugin_markers(testdir):
 )
 def test_param_requires_value(testdir, required_value_parameter):
     '''Verifies failure when not providing a value to a required parameter'''
-
     result = testdir.runpytest(*[required_value_parameter])
-    assert result.ret == EXIT_INTERRUPTED
+    assert result.ret == EXIT_USAGEERROR
     result.stderr.fnmatch_lines([
         '*: error: argument %s: expected one argument' % required_value_parameter,
     ])
