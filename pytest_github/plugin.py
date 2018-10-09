@@ -307,7 +307,10 @@ class GitHubPytestPlugin(object):
                 if url is not None and url not in self._issue_cache:
                     (username, repository, number) = self.__parse_issue_url(url)
                     try:
-                        self._issue_cache[url] = IssueWrapper(self.api.issue(username, repository, number), self)
+                        if self.api:
+                            self._issue_cache[url] = IssueWrapper(self.api.issue(username, repository, number), self)
+                        else:
+                            raise AttributeError('No valid github session found to access private issue.')
                     except (AttributeError, github3.exceptions.GitHubError) as e:
                         errstr = "Unable to inspect github issue %s - %s" % (url, str(e))
                         warnings.warn(errstr, Warning)

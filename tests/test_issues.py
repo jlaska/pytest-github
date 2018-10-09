@@ -152,9 +152,7 @@ def test_with_malformed_issue_link(testdir, capsys, issue_url, expected_result):
         assert "Malformed github issue URL:" in stdout
 
 
-def test_with_private_issue_link(testdir, recwarn, capsys):
-    '''FIXME'''
-
+def test_with_private_issue_link(testdir, capsys):
     issue_url = 'https://github.com/github/github/issues/1'
     src = """
         import pytest
@@ -162,26 +160,12 @@ def test_with_private_issue_link(testdir, recwarn, capsys):
         def test_func():
             assert False
     """ % issue_url
-    with pytest.warns(None) as record:
-        result = testdir.inline_runsource(src)
-        assert result.ret == EXIT_TESTSFAILED
 
-    # check that warnings are present
-    assert len(record) > 0
-
-    # Assert the expected warning is present
-    found = False
-    expected_warning = "Unable to inspect github issue %s" % issue_url
-    for warning in record:
-        # check that the category matches
-        assert issubclass(warning.category, Warning)
-
-        # check that the message matches
-        if expected_warning in str(warning.message):
-            found = True
-
-    # Assert the warning was found
-    assert found, "Unable to find expected warning message - %s" % expected_warning
+    testdir.makepyfile(src)
+    result = testdir.runpytest()
+    result.assert_outcomes(failed=1)
+    lines = ' '.join(result.stdout.lines)
+    assert 'Unable to inspect github issue' in lines
 
 
 @pytest.mark.usefixtures('monkeypatch_github3')
