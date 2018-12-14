@@ -2,4 +2,4 @@
 
 __version__ = "0.3.0"
 __author__ = "James Laska"
-__author_email__ = "<jlaska AT redhat.com>"
+__author_email__ = "<jlaska@redhat.com>"
