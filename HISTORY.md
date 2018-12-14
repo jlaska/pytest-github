@@ -1,5 +1,9 @@
 ## Release History
 
+### 0.3.0 (2018-12-14)
+
+* Update use of get_marker to get_closest_marker (@kdelee)
+
 ### 0.2.0 (2018-07-12)
 
 * Add support for isolating specific parametrizations (@cmeyersfsu)
