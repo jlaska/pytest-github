@@ -11,7 +11,6 @@ import warnings
 import yaml
 
 import pytest
-from _pytest.resultlog import generic_path
 import github3
 
 # Import, or define, NullHandler
@@ -34,6 +33,30 @@ log.addHandler(NullHandler())
 # Maintain a list of github labels to consider issues "finished".  Any issues
 # associated with these labels will be considered "done".
 GITHUB_COMPLETED_LABELS = []
+
+
+def generic_path(item):
+    chain = item.listchain()
+    gpath = [chain[0].name]
+    fspath = chain[0].fspath
+    fspart = False
+    for node in chain[1:]:
+        newfspath = node.fspath
+        if newfspath == fspath:
+            if fspart:
+                gpath.append(":")
+                fspart = False
+            else:
+                gpath.append(".")
+        else:
+            gpath.append("/")
+            fspart = True
+        name = node.name
+        if name[0] in "([":
+            gpath.pop()
+        gpath.append(name)
+        fspath = newfspath
+    return "".join(gpath)
 
 
 def pytest_addoption(parser):

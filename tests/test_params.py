@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 import pytest
-import mock
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from _pytest.main import (
     EXIT_NOTESTSCOLLECTED,
     EXIT_USAGEERROR,
