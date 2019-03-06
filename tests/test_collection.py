@@ -60,7 +60,7 @@ def test_collection_with_issues_in_multiple_modules(testdir, capsys, closed_issu
     }
 
     testdir.makepyfile(**test_modules)
-    
+
     result = testdir.runpytest_inprocess('--collectonly')
     stdout, stderr = capsys.readouterr()
 

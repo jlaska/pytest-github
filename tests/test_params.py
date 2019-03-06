@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import warnings
+
 import pytest
 
 try:
@@ -117,10 +119,12 @@ def test_param_empty_cfg(testdir, recwarn):
     # check that only one warning was raised
     assert len(recwarn) > 0
     # check that the category matches
-    record = recwarn.pop(Warning)
-    assert issubclass(record.category, Warning)
+    for warn_obj in recwarn.list:
+        assert isinstance(warn_obj, warnings.WarningMessage)
+    all_warnings = [str(warn.message) for warn in recwarn.list]
+    warning_messages = ' '.join(all_warnings)
     # check that the message matches
-    assert str(record.message).startswith("No github configuration found in file: ")
+    assert 'No github configuration found in file' in warning_messages
 
 
 @pytest.mark.parametrize(

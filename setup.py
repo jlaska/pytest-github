@@ -109,10 +109,11 @@ setup(
     ],
     tests_requires=[
         'tox',
+        'github3.py',
     ],
     install_requires=[
         'pytest',
-        'PyYAML',
+        'PyYAML>=3.12',
         'github3.py',
     ],
     cmdclass={
@@ -130,5 +131,5 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3'
-    ] + [("Programming Language :: Python :: %s" % x) for x in "2.7 3.3 3.4 3.5".split()],
+    ] + [("Programming Language :: Python :: %s" % x) for x in "2.7 3.6".split()],
 )
