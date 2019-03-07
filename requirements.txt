@@ -2,7 +2,7 @@ tox
 pytest
 coverage
 coveralls
-PyYAML>=3.12
+PyYAML
 github3.py
 flake8
 mock; python_version < '3.0'

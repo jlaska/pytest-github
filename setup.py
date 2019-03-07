@@ -113,7 +113,7 @@ setup(
     ],
     install_requires=[
         'pytest',
-        'PyYAML>=3.12',
+        'PyYAML',
         'github3.py',
     ],
     cmdclass={
