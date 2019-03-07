@@ -263,7 +263,6 @@ class GitHubPytestPlugin(object):
             errstr = "Malformed github issue URL: '%s'" % url
             raise Exception(errstr)
 
-
     def pytest_runtest_setup(self, item):
         """Handle github marker by calling xfail or skip, as needed."""
         log.debug("pytest_runtest_setup() called")
@@ -282,7 +281,7 @@ class GitHubPytestPlugin(object):
             param_marker = item.get_closest_marker('parametrize')
             param_marker_ids = []
             if param_marker:
-                param_marker_ids = param_marker.kwargs.get('ids', [])
+                param_marker_ids = param_marker.kwargs.get('ids', [])  # noqa F841
             current_test_id = item.callspec.id
 
             if current_test_id not in github_marker_ids:
