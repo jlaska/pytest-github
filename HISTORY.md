@@ -1,5 +1,10 @@
 ## Release History
 
+### 0.3.1 (2019-03-07)
+
+* Numerous test and build fixes to improve py36 support (@kdelee)
+* Drop uneeded reqs (@kdelee)
+
 ### 0.3.0 (2018-12-14)
 
 * Update use of get_marker to get_closest_marker (@kdelee)
