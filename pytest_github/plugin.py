@@ -116,7 +116,7 @@ def pytest_configure(config):
         if os.path.isfile(github_cfg_file):
             # Load configuration file ...
             with open(github_cfg_file, 'r') as fd:
-                github_cfg = yaml.load(fd)
+                github_cfg = yaml.safe_load(fd)
 
             if isinstance(github_cfg, dict) and 'github' in github_cfg and isinstance(github_cfg['github'], dict):
                 github_username = github_cfg['github'].get('username', None)
