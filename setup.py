@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import email
 import shutil
 import codecs
 from setuptools import setup, Command
